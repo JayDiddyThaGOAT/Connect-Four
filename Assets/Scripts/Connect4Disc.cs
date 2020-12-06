@@ -8,8 +8,6 @@ public class Connect4Disc : MonoBehaviour
 
     public float shiftDuration = 0.25f;
     public float dropDuration = 0.5f;
-
-    private bool isAboveBoard = true;
     public bool isPlayer = true;
 
     private Vector3 touchDownPosition, touchUpPosition;
@@ -48,7 +46,6 @@ public class Connect4Disc : MonoBehaviour
 
             transform.position = new Vector3(targetX, transform.position.y, transform.position.z);
             currentCol = targetCol;
-            Debug.Log(currentCol);
 
             isMoving = false;
         }
@@ -78,11 +75,17 @@ public class Connect4Disc : MonoBehaviour
 
             transform.position = new Vector3(transform.position.x, targetY, transform.position.z);
             currentRow = targetRow;
-            gameBoard.PlaceDiscOn(color, currentRow, currentCol);
+            gameBoard.PlaceDiscOn(color, currentRow, currentCol, gameBoard.GetGameBoardMatrix());
 
             isMoving = false;
 
-            yield return StartCoroutine(gameBoard.Rotate());
+            if (gameBoard.IsWinner(color, currentRow, currentCol, gameBoard.GetGameBoardMatrix()))
+            {
+                gameBoard.SetWinner(color);
+                yield return 0;
+            }
+            else
+                yield return StartCoroutine(gameBoard.Rotate());
         }
         else
             yield return 0;
@@ -91,35 +94,32 @@ public class Connect4Disc : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (isAboveBoard)
+        if (currentRow == -1)
         {
-            if (currentRow == -1)
+            if (isPlayer && !isMoving)
             {
-                if (isPlayer && !isMoving)
+                if (Input.GetMouseButtonDown(0))
                 {
-                    if (Input.GetMouseButtonDown(0))
+                    touchDownPosition = Input.mousePosition;
+                }
+                else if (Input.GetMouseButtonUp(0))
+                {
+                    touchUpPosition = Input.mousePosition;
+                    
+                    Vector3 swipeDirection = (touchUpPosition - touchDownPosition).normalized;
+                    
+                    if (swipeDirection.y > -0.5f)
                     {
-                        touchDownPosition = Input.mousePosition;
-                    }
-                    else if (Input.GetMouseButtonUp(0))
-                    {
-                        touchUpPosition = Input.mousePosition;
-                        
-                        Vector3 swipeDirection = (touchUpPosition - touchDownPosition).normalized;
-                        
-                        if (swipeDirection.y > -0.5f)
+                        if (Mathf.Abs(swipeDirection.x) >= 0.5)
                         {
-                            if (Mathf.Abs(swipeDirection.x) >= 0.5)
-                            {
-                                if (swipeDirection.x > 0)
-                                    StartCoroutine(ShiftToColumn(currentCol + color));
-                                else if (swipeDirection.x < 0)
-                                    StartCoroutine(ShiftToColumn(currentCol - color));
-                            }
+                            if (swipeDirection.x > 0)
+                                StartCoroutine(ShiftToColumn(currentCol + color));
+                            else if (swipeDirection.x < 0)
+                                StartCoroutine(ShiftToColumn(currentCol - color));
                         }
-                        else
-                            StartCoroutine(DropInBoard());
                     }
+                    else
+                        StartCoroutine(DropInBoard());
                 }
             }
         }
