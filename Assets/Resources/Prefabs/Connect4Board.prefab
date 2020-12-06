@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 4457648127322312820}
   - component: {fileID: 753056406893256657}
   - component: {fileID: 3285256657036421915}
+  - component: {fileID: 2050315296011887745}
   m_Layer: 0
   m_Name: Connect4Board
-  m_TagString: Untagged
+  m_TagString: Board
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -82,3 +83,18 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2050315296011887745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3933735902690085582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de7f10879a9dcda47a26a5df56b67701, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blackDisc: {fileID: -3781052196095962738, guid: 29bb8bede790a8a4daabd29252e8d665, type: 3}
+  whiteDisc: {fileID: -6097201076095298821, guid: 40b68c73eee1a8249854c26b0a7384f7, type: 3}
+  currentPlayer: 1
