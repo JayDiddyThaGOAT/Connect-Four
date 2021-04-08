@@ -34,6 +34,8 @@ public class Connect4Board : MonoBehaviour
 
     private SwipeDetection swipeDetection;
 
+    private GameManager gameManager;
+
     private GameObject currentDisc;
 
     private int currentDiscRow;
@@ -47,6 +49,7 @@ public class Connect4Board : MonoBehaviour
 
         inputManager = InputManager.Instance;
         swipeDetection = SwipeDetection.Instance;
+        gameManager = GameManager.Instance;
 
         ResetBoard();
 
@@ -62,6 +65,8 @@ public class Connect4Board : MonoBehaviour
         }
         currentDiscRow = -1;
         currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
+
+
     }
 
     void ResetBoard()
@@ -71,6 +76,8 @@ public class Connect4Board : MonoBehaviour
         swipeDetection.OnSwipeLeft += ShiftDiscToLeft;
         swipeDetection.OnSwipeRight += ShiftDiscToRight;
         swipeDetection.OnSwipeDown += DropDisc;
+
+        gameManager.SetTieTextActive(false);
 
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
@@ -251,10 +258,29 @@ public class Connect4Board : MonoBehaviour
 
         winnerPlayer = player;
         winLineRenderer.enabled = true;
-        winLineRenderer.startColor = player == Connect4Player.Black ? Color.black : Color.white;
+        winLineRenderer.startColor = player == Connect4Player.Black ? Color.white : Color.black;
         winLineRenderer.endColor = winLineRenderer.startColor;
         winLineRenderer.SetPosition(0, startLinePosition);
         winLineRenderer.SetPosition(1, endLinePosition);
+
+        if (winnerPlayer == Connect4Player.Black)
+            gameManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
+        else if (winnerPlayer == Connect4Player.White)
+            gameManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+    }
+
+    public bool IsTie()
+    {
+        for (int row = 0; row < 6; row++)
+        {
+            for (int col = 0; col < 7; col++)
+            {
+                if (boardMatrix[row, col] == Connect4Player.None)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     public Connect4Player GetWinner()
@@ -362,7 +388,24 @@ public class Connect4Board : MonoBehaviour
                 yield return 0;
             }
             else
-                yield return StartCoroutine(RotateBoard());
+            {
+                if (IsTie())
+                {
+                    currentDisc = null;
+
+                    swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
+                    swipeDetection.OnSwipeRight -= ShiftDiscToRight;
+                    swipeDetection.OnSwipeDown -= DropDisc;
+
+                    inputManager.OnStartTouch += ResetGame;
+
+                    gameManager.SetTieTextActive(true);
+
+                    yield return 0;
+                }
+                else
+                    yield return StartCoroutine(RotateBoard());
+            }
         }
         else
             yield return 0;
