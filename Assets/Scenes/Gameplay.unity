@@ -204,6 +204,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2050315296011887745, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
+      propertyPath: isBlackDiscAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2050315296011887745, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
+      propertyPath: isWhiteDiscAI
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3933735902690085582, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
       propertyPath: m_Name
       value: Connect4Board

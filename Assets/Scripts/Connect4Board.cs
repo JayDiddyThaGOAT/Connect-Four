@@ -24,6 +24,9 @@ public class Connect4Board : MonoBehaviour
     [SerializeField]
     private float discDropDuration = 0.5f;
 
+    [SerializeField]
+    private float aiMoveDelay = 0.25f;
+
     private Connect4Player[,] boardMatrix = new Connect4Player[6, 7];
     private Connect4Player winnerPlayer = Connect4Player.None;
 
@@ -57,16 +60,40 @@ public class Connect4Board : MonoBehaviour
         {
             currentDisc = Instantiate<GameObject>(blackDisc, transform);
             transform.rotation = Quaternion.identity;
+
+            if (isBlackDiscAI)
+            {
+                inputManager.enabled = false;
+
+                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
+                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                StartCoroutine(RunAITurn(targetColumn));
+            }
+            else
+            {
+                inputManager.enabled = true;
+            }
         }
         else if (currentPlayer == Connect4Player.White)
         {
             currentDisc = Instantiate<GameObject>(whiteDisc, transform);
             transform.rotation = Quaternion.Euler(0.0f, 180.0f, 0.0f);
+
+            if (isWhiteDiscAI)
+            {
+                inputManager.enabled = false;
+
+                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
+                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                StartCoroutine(RunAITurn(targetColumn));
+            }
+            else
+            {
+                inputManager.enabled = true;
+            }
         }
         currentDiscRow = -1;
         currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
-
-
     }
 
     void ResetBoard()
@@ -140,6 +167,19 @@ public class Connect4Board : MonoBehaviour
     public Connect4Player[,] GetGameBoardMatrix()
     {
         return boardMatrix;
+    }
+
+    public List<int> GetAvailableColumns(Connect4Player[,] board)
+    {
+        List<int> Columns = new List<int>();
+
+        for (int i = 0; i < 6; i++)
+        {
+            if (board[i, 0] == Connect4Player.None)
+                Columns.Add(i);
+        }
+
+        return Columns;
     }
 
     public void PlaceDiscOn(Connect4Player player, int row, int col, Connect4Player[,] board)
@@ -254,6 +294,7 @@ public class Connect4Board : MonoBehaviour
         swipeDetection.OnSwipeRight -= ShiftDiscToRight;
         swipeDetection.OnSwipeDown -= DropDisc;
 
+        inputManager.enabled = true;
         inputManager.OnStartTouch += ResetGame;
 
         winnerPlayer = player;
@@ -318,10 +359,36 @@ public class Connect4Board : MonoBehaviour
         if (currentPlayer == Connect4Player.Black)
         {
             currentDisc = Instantiate<GameObject>(blackDisc, transform);
+
+            if (isBlackDiscAI)
+            {
+                inputManager.enabled = false;
+
+                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
+                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                StartCoroutine(RunAITurn(targetColumn));
+            }
+            else
+            {
+                inputManager.enabled = true;
+            }
         }
         else if (currentPlayer == Connect4Player.White)
         {
             currentDisc = Instantiate<GameObject>(whiteDisc, transform);
+
+            if (isWhiteDiscAI)
+            {
+                inputManager.enabled = false;
+
+                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
+                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                StartCoroutine(RunAITurn(targetColumn));
+            }
+            else
+            {
+                inputManager.enabled = true;
+            }
         }
 
         currentDiscRow = -1;
@@ -409,6 +476,19 @@ public class Connect4Board : MonoBehaviour
         }
         else
             yield return 0;
+    }
+
+    private IEnumerator RunAITurn(int targetCol)
+    {
+        yield return new WaitForSeconds(aiMoveDelay);
+
+        if (currentPlayer == Connect4Player.Black)
+            yield return StartCoroutine(ShiftToColumn(targetCol));
+        else if (currentPlayer == Connect4Player.White)
+            yield return StartCoroutine(ShiftToColumn(6 - targetCol));
+
+        yield return new WaitForSeconds(aiMoveDelay);
+        yield return StartCoroutine("DropDisc");
     }
 
     void ShiftDiscToLeft()
