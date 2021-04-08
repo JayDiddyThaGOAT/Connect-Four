@@ -10,9 +10,6 @@ public class Connect4Board : MonoBehaviour
     private GameObject blackDisc, whiteDisc;
 
     [SerializeField]
-    private bool isBlackDiscAI, isWhiteDiscAI;
-
-    [SerializeField]
     private Connect4Player currentPlayer = Connect4Player.Black;
 
     [SerializeField]
@@ -26,6 +23,9 @@ public class Connect4Board : MonoBehaviour
 
     [SerializeField]
     private float aiMoveDelay = 0.25f;
+
+    [SerializeField]
+    private bool isBlackDiscAI, isWhiteDiscAI;
 
     private Connect4Player[,] boardMatrix = new Connect4Player[6, 7];
     private Connect4Player winnerPlayer = Connect4Player.None;
@@ -65,8 +65,8 @@ public class Connect4Board : MonoBehaviour
             {
                 inputManager.enabled = false;
 
-                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
-                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
+                int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
                 StartCoroutine(RunAITurn(targetColumn));
             }
             else
@@ -83,8 +83,8 @@ public class Connect4Board : MonoBehaviour
             {
                 inputManager.enabled = false;
 
-                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
-                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
+                List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
+                int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
                 StartCoroutine(RunAITurn(targetColumn));
             }
             else
@@ -169,13 +169,13 @@ public class Connect4Board : MonoBehaviour
         return boardMatrix;
     }
 
-    public List<int> GetAvailableColumns(Connect4Player[,] board)
+    public List<int> GetAvailableMoves(Connect4Player[,] board)
     {
         List<int> Columns = new List<int>();
 
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i <= 6; i++)
         {
-            if (board[i, 0] == Connect4Player.None)
+            if (board[0, i] == Connect4Player.None)
                 Columns.Add(i);
         }
 
@@ -356,6 +356,9 @@ public class Connect4Board : MonoBehaviour
 
         yield return 0;
 
+        List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
+        int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
+
         if (currentPlayer == Connect4Player.Black)
         {
             currentDisc = Instantiate<GameObject>(blackDisc, transform);
@@ -363,9 +366,6 @@ public class Connect4Board : MonoBehaviour
             if (isBlackDiscAI)
             {
                 inputManager.enabled = false;
-
-                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
-                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
                 StartCoroutine(RunAITurn(targetColumn));
             }
             else
@@ -380,10 +380,7 @@ public class Connect4Board : MonoBehaviour
             if (isWhiteDiscAI)
             {
                 inputManager.enabled = false;
-
-                List<int> AvailableColumns = GetAvailableColumns(boardMatrix);
-                int targetColumn = AvailableColumns[Random.Range(0, AvailableColumns.Count)];
-                StartCoroutine(RunAITurn(targetColumn));
+                StartCoroutine(RunAITurn(6 - targetColumn));
             }
             else
             {
@@ -394,6 +391,13 @@ public class Connect4Board : MonoBehaviour
         currentDiscRow = -1;
         currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
         swipeDetection.enabled = true;
+
+        string moves = string.Empty;
+        foreach (var move in AvailableMoves)
+        {
+            moves += move + " ";
+        }
+        Debug.Log(moves);
     }
 
     IEnumerator ShiftToColumn(int targetCol)
