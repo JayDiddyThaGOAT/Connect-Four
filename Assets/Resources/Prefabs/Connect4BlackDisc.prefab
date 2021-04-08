@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 3904172162857209043}
   - component: {fileID: 108575058932106102}
   - component: {fileID: 2766700255097223100}
-  - component: {fileID: -3781052196095962738}
   m_Layer: 0
   m_Name: Connect4BlackDisc
   m_TagString: Black Disc
@@ -83,19 +82,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &-3781052196095962738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4424143733249988201}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ee170b2af6229246b20b32effd8b031, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  color: 1
-  shiftDuration: 0.125
-  dropDuration: 0.175
-  isPlayer: 1
