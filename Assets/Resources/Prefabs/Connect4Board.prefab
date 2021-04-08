@@ -102,8 +102,8 @@ MonoBehaviour:
   isWhiteDiscAI: 0
   currentPlayer: 1
   rotateDuration: 0.25
-  discShiftDuration: 0.125
-  discDropDuration: 0.25
+  discShiftDuration: 0.0625
+  discDropDuration: 0.15
 --- !u!120 &1128017915
 LineRenderer:
   m_ObjectHideFlags: 0
