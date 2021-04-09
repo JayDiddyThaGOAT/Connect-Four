@@ -4,7 +4,7 @@ using UnityEngine;
 
 using TMPro;
 
-public class GameManager : Singleton<GameManager>
+public class ScoreManager : Singleton<ScoreManager>
 {
     [SerializeField]
     private TMP_Text BlackDiscScoreText;

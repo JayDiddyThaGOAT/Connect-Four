@@ -37,7 +37,7 @@ public class Connect4Board : MonoBehaviour
 
     private SwipeDetection swipeDetection;
 
-    private GameManager gameManager;
+    private ScoreManager scoreManager;
 
     private GameObject currentDisc;
 
@@ -52,7 +52,7 @@ public class Connect4Board : MonoBehaviour
 
         inputManager = InputManager.Instance;
         swipeDetection = SwipeDetection.Instance;
-        gameManager = GameManager.Instance;
+        scoreManager = ScoreManager.Instance;
 
         ResetBoard();
 
@@ -104,7 +104,7 @@ public class Connect4Board : MonoBehaviour
         swipeDetection.OnSwipeRight += ShiftDiscToRight;
         swipeDetection.OnSwipeDown += DropDisc;
 
-        gameManager.SetTieTextActive(false);
+        scoreManager.SetTieTextActive(false);
 
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
@@ -305,9 +305,9 @@ public class Connect4Board : MonoBehaviour
         winLineRenderer.SetPosition(1, endLinePosition);
 
         if (winnerPlayer == Connect4Player.Black)
-            gameManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
+            scoreManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
         else if (winnerPlayer == Connect4Player.White)
-            gameManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+            scoreManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
     }
 
     public bool IsTie()
@@ -391,13 +391,6 @@ public class Connect4Board : MonoBehaviour
         currentDiscRow = -1;
         currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
         swipeDetection.enabled = true;
-
-        string moves = string.Empty;
-        foreach (var move in AvailableMoves)
-        {
-            moves += move + " ";
-        }
-        Debug.Log(moves);
     }
 
     IEnumerator ShiftToColumn(int targetCol)
@@ -470,7 +463,7 @@ public class Connect4Board : MonoBehaviour
 
                     inputManager.OnStartTouch += ResetGame;
 
-                    gameManager.SetTieTextActive(true);
+                    scoreManager.SetTieTextActive(true);
 
                     yield return 0;
                 }
