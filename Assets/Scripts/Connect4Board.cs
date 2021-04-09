@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum Connect4Player {None, Black, White}
 
@@ -23,6 +24,9 @@ public class Connect4Board : MonoBehaviour
 
     [SerializeField]
     private float aiMoveDelay = 0.25f;
+
+    [SerializeField]
+    private float aiAutoResetDelay = 2.0f;
 
     [SerializeField]
     private bool isBlackDiscAI, isWhiteDiscAI;
@@ -50,9 +54,12 @@ public class Connect4Board : MonoBehaviour
     {
         winLineRenderer = GetComponent<LineRenderer>();
 
-        inputManager = InputManager.Instance;
-        swipeDetection = SwipeDetection.Instance;
-        scoreManager = ScoreManager.Instance;
+        if (SceneManager.GetActiveScene().name == "GamePlay")
+        {
+            inputManager = InputManager.Instance;
+            swipeDetection = SwipeDetection.Instance;
+            scoreManager = ScoreManager.Instance;
+        }
 
         ResetBoard();
 
@@ -63,7 +70,8 @@ public class Connect4Board : MonoBehaviour
 
             if (isBlackDiscAI)
             {
-                inputManager.enabled = false;
+                if (inputManager != null)
+                    inputManager.enabled = false;
 
                 List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
                 int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
@@ -71,7 +79,8 @@ public class Connect4Board : MonoBehaviour
             }
             else
             {
-                inputManager.enabled = true;
+                if (inputManager != null)
+                    inputManager.enabled = true;
             }
         }
         else if (currentPlayer == Connect4Player.White)
@@ -81,7 +90,8 @@ public class Connect4Board : MonoBehaviour
 
             if (isWhiteDiscAI)
             {
-                inputManager.enabled = false;
+                if (inputManager != null)
+                    inputManager.enabled = false;
 
                 List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
                 int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
@@ -89,7 +99,8 @@ public class Connect4Board : MonoBehaviour
             }
             else
             {
-                inputManager.enabled = true;
+                if (inputManager != null)
+                    inputManager.enabled = true;
             }
         }
         currentDiscRow = -1;
@@ -98,13 +109,18 @@ public class Connect4Board : MonoBehaviour
 
     void ResetBoard()
     {
-        inputManager.OnStartTouch -= ResetGame;
+        if (inputManager != null)
+            inputManager.OnStartTouch -= ResetGame;
 
-        swipeDetection.OnSwipeLeft += ShiftDiscToLeft;
-        swipeDetection.OnSwipeRight += ShiftDiscToRight;
-        swipeDetection.OnSwipeDown += DropDisc;
+        if (swipeDetection != null)
+        {
+            swipeDetection.OnSwipeLeft += ShiftDiscToLeft;
+            swipeDetection.OnSwipeRight += ShiftDiscToRight;
+            swipeDetection.OnSwipeDown += DropDisc;
+        }
 
-        scoreManager.SetTieTextActive(false);
+        if (scoreManager != null)
+            scoreManager.SetTieTextActive(false);
 
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
@@ -290,12 +306,18 @@ public class Connect4Board : MonoBehaviour
     {
         currentDisc = null;
 
-        swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
-        swipeDetection.OnSwipeRight -= ShiftDiscToRight;
-        swipeDetection.OnSwipeDown -= DropDisc;
+        if (swipeDetection != null)
+        {
+            swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
+            swipeDetection.OnSwipeRight -= ShiftDiscToRight;
+            swipeDetection.OnSwipeDown -= DropDisc;
+        }
 
-        inputManager.enabled = true;
-        inputManager.OnStartTouch += ResetGame;
+        if (inputManager != null)
+        {
+            inputManager.enabled = true;
+            inputManager.OnStartTouch += ResetGame;
+        }
 
         winnerPlayer = player;
         winLineRenderer.enabled = true;
@@ -304,10 +326,13 @@ public class Connect4Board : MonoBehaviour
         winLineRenderer.SetPosition(0, startLinePosition);
         winLineRenderer.SetPosition(1, endLinePosition);
 
-        if (winnerPlayer == Connect4Player.Black)
-            scoreManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
-        else if (winnerPlayer == Connect4Player.White)
-            scoreManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+        if (scoreManager != null)
+        {
+            if (winnerPlayer == Connect4Player.Black)
+                scoreManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
+            else if (winnerPlayer == Connect4Player.White)
+                scoreManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+        }
     }
 
     public bool IsTie()
@@ -365,12 +390,15 @@ public class Connect4Board : MonoBehaviour
 
             if (isBlackDiscAI)
             {
-                inputManager.enabled = false;
+                if (inputManager != null)
+                    inputManager.enabled = false;
+                
                 StartCoroutine(RunAITurn(targetColumn));
             }
             else
             {
-                inputManager.enabled = true;
+                if (inputManager != null)
+                    inputManager.enabled = true;
             }
         }
         else if (currentPlayer == Connect4Player.White)
@@ -379,18 +407,23 @@ public class Connect4Board : MonoBehaviour
 
             if (isWhiteDiscAI)
             {
-                inputManager.enabled = false;
+                if (inputManager != null)
+                    inputManager.enabled = false;
+
                 StartCoroutine(RunAITurn(6 - targetColumn));
             }
             else
             {
-                inputManager.enabled = true;
+                if (inputManager != null)
+                    inputManager.enabled = true;
             }
         }
 
         currentDiscRow = -1;
         currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
-        swipeDetection.enabled = true;
+
+        if (swipeDetection != null)
+            swipeDetection.enabled = true;
     }
 
     IEnumerator ShiftToColumn(int targetCol)
@@ -399,7 +432,8 @@ public class Connect4Board : MonoBehaviour
 
         if (Mathf.Abs(targetX) <= 15)
         {
-            swipeDetection.enabled = false;
+            if (swipeDetection != null)
+                swipeDetection.enabled = false;
 
             float startX = GetXAt(currentDiscCol, currentPlayer);
 
@@ -416,7 +450,8 @@ public class Connect4Board : MonoBehaviour
             currentDisc.transform.position = new Vector3(targetX, currentDisc.transform.position.y, currentDisc.transform.position.z);
             currentDiscCol = targetCol;
 
-            swipeDetection.enabled = true;
+            if (swipeDetection != null)
+                swipeDetection.enabled = true;
         }
         else 
             yield return 0;
@@ -427,7 +462,8 @@ public class Connect4Board : MonoBehaviour
         int targetRow = GetRowAvailableAt(currentDiscCol);
         if (targetRow >= 0)
         {
-            swipeDetection.enabled = false;
+            if (swipeDetection != null)
+                swipeDetection.enabled = false;
 
             float startY = currentDisc.transform.position.y;
             float targetY = GetYAt(targetRow);
@@ -449,7 +485,11 @@ public class Connect4Board : MonoBehaviour
             if (IsWinner(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix()))
             {
                 SetWinner(currentPlayer);
-                yield return 0;
+
+                if (isBlackDiscAI && isWhiteDiscAI)
+                    yield return StartCoroutine("AutoReset");
+                else
+                    yield return 0;
             }
             else
             {
@@ -457,15 +497,25 @@ public class Connect4Board : MonoBehaviour
                 {
                     currentDisc = null;
 
-                    swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
-                    swipeDetection.OnSwipeRight -= ShiftDiscToRight;
-                    swipeDetection.OnSwipeDown -= DropDisc;
+                    if (swipeDetection != null)
+                    {
+                        swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
+                        swipeDetection.OnSwipeRight -= ShiftDiscToRight;
+                        swipeDetection.OnSwipeDown -= DropDisc;
+                    }
 
-                    inputManager.OnStartTouch += ResetGame;
+                    if (scoreManager != null)
+                        scoreManager.SetTieTextActive(true);
 
-                    scoreManager.SetTieTextActive(true);
-
-                    yield return 0;
+                    if (inputManager != null)
+                        inputManager.OnStartTouch += ResetGame;
+                    else
+                    {
+                        if (isBlackDiscAI && isWhiteDiscAI)
+                            yield return StartCoroutine("AutoReset");
+                        else
+                            yield return 0;
+                    }
                 }
                 else
                     yield return StartCoroutine(RotateBoard());
@@ -486,6 +536,12 @@ public class Connect4Board : MonoBehaviour
 
         yield return new WaitForSeconds(aiMoveDelay);
         yield return StartCoroutine("DropDisc");
+    }
+
+    private IEnumerator AutoReset()
+    {
+        yield return new WaitForSeconds(aiAutoResetDelay);
+        ResetGame(Vector2.zero);
     }
 
     void ShiftDiscToLeft()
@@ -517,7 +573,7 @@ public class Connect4Board : MonoBehaviour
         StartCoroutine("DropDiscInBoard");
     }
 
-    public void ResetGame(Vector2 position, float time)
+    public void ResetGame(Vector2 position, float time = 0.0f)
     {
         ResetBoard();
         StartCoroutine(RotateBoard());
