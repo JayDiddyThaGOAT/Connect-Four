@@ -6,6 +6,7 @@ using TMPro;
 
 public class ScoreManager : Singleton<ScoreManager>
 {
+#pragma warning disable 0649
     [SerializeField]
     private TMP_Text BlackDiscScoreText;
 
@@ -20,6 +21,7 @@ public class ScoreManager : Singleton<ScoreManager>
 
     [SerializeField]
     private int StartWhiteDiscScore = 0;
+#pragma warning restore 0649
 
     void Start()
     {

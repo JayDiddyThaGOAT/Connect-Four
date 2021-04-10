@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class StartMenuManager : MonoBehaviour
 {
+#pragma warning disable 0649
     [SerializeField]
     private RectTransform StartMenuButtonPanel;
 
@@ -29,6 +30,7 @@ public class StartMenuManager : MonoBehaviour
 
     [SerializeField]
     private float PanelShiftDuration = 0.25f;
+#pragma warning restore 0649
 
     private Connect4Board connect4Board;
 

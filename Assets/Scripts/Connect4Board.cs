@@ -7,6 +7,7 @@ public enum Connect4Player {None, Black, White}
 
 public class Connect4Board : SingletonPersistent<Connect4Board>
 {
+#pragma warning disable 0649
     [SerializeField]
     private GameObject blackDisc, whiteDisc;
 
@@ -30,6 +31,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     [SerializeField]
     private bool isBlackDiscAI, isWhiteDiscAI;
+#pragma warning restore 0649
 
     private Connect4Player[,] boardMatrix = new Connect4Player[6, 7];
     private Connect4Player winnerPlayer = Connect4Player.None;

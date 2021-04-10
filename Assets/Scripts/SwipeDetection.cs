@@ -24,8 +24,10 @@ public class SwipeDetection : Singleton<SwipeDetection>
     [SerializeField]
     private float trailPositionZ = -10f;
 
+#pragma warning disable 0649
     [SerializeField]
     private GameObject trail; 
+#pragma warning restore 0649
 
     private InputManager inputManager;
 
