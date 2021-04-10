@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+using TMPro;
+
 public class StartMenuManager : MonoBehaviour
 {
 #pragma warning disable 0649
@@ -23,10 +25,16 @@ public class StartMenuManager : MonoBehaviour
     private Button BackButton;
 
     [SerializeField]
-    private RectTransform DiscSelector;
+    private Button PlayButton;
 
     [SerializeField]
-    private GameObject DiscSelectionText;
+    private Image BlackDiscPointer;
+
+    [SerializeField]
+    private Image WhiteDiscPointer;
+
+    [SerializeField]
+    private TMP_Text InstructionsText;
 
     [SerializeField]
     private float PanelShiftDuration = 0.25f;
@@ -68,6 +76,12 @@ public class StartMenuManager : MonoBehaviour
     private IEnumerator LoadStartMenuButtonPanel()
     {
         BackButton.interactable = false;
+        PlayButton.interactable = false;
+
+        BlackDiscPointer.enabled = false;
+        WhiteDiscPointer.enabled = false;
+        
+        InstructionsText.text = "";
 
         float t = 0;
         while (t <= PanelShiftDuration)
@@ -82,6 +96,8 @@ public class StartMenuManager : MonoBehaviour
 
             yield return null;
         }
+
+        InstructionsText.text = "Select A Disc";
     }
 
     public void GoToDiscSelectionPanel()
@@ -96,28 +112,26 @@ public class StartMenuManager : MonoBehaviour
     
     public void SelectWhiteDisc()
     {
-        if (DiscSelector.parent == WhiteDiscButtonTransform)
-            return;
+        WhiteDiscPointer.enabled = true;
+        BlackDiscPointer.enabled = false;
 
-        DiscSelector.SetParent(WhiteDiscButtonTransform, false);
-        DiscSelector.localPosition = new Vector3(DiscSelector.localPosition.x + 24.0f, DiscSelector.localPosition.y, DiscSelector.localPosition.z);
-        DiscSelector.GetComponent<Image>().color = Color.white;
+        PlayButton.interactable = true;
+        InstructionsText.text = "Press Play Button";
     }
 
     public void SelectBlackDisc()
     {
-        if (DiscSelector.parent == BlackDiscButtonTransform)
-            return;
+        BlackDiscPointer.enabled = true;
+        WhiteDiscPointer.enabled = false;
 
-        DiscSelector.SetParent(BlackDiscButtonTransform, false);
-        DiscSelector.localPosition = new Vector3(DiscSelector.localPosition.x - 24.0f, DiscSelector.localPosition.y, DiscSelector.localPosition.z);
-        DiscSelector.GetComponent<Image>().color = Color.black;
+        PlayButton.interactable = true;
+        InstructionsText.text = "Press Play Button";
     }
 
     public void PlayGame()
     {
-        connect4Board.SetBlackDiscAI(DiscSelector.parent != BlackDiscButtonTransform);
-        connect4Board.SetWhiteDiscAI(DiscSelector.parent != WhiteDiscButtonTransform);
+        connect4Board.SetBlackDiscAI(!BlackDiscPointer.enabled);
+        connect4Board.SetWhiteDiscAI(!WhiteDiscPointer.enabled);
 
         SceneManager.LoadScene("Gameplay");
     }
