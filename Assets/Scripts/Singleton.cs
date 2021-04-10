@@ -47,11 +47,14 @@ public class SingletonPersistent<T> : MonoBehaviour where T : Component
         if (Instance == null)
         {
             Instance = this as T;
-            DontDestroyOnLoad(this);
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
         }
     }
+
+    public virtual void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode){}
 }

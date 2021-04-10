@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 public enum Connect4Player {None, Black, White}
 
-public class Connect4Board : MonoBehaviour
+public class Connect4Board : SingletonPersistent<Connect4Board>
 {
     [SerializeField]
     private GameObject blackDisc, whiteDisc;
@@ -49,66 +49,29 @@ public class Connect4Board : MonoBehaviour
 
     private int currentDiscCol;
 
-    // Start is called before the first frame update
-    void Start()
+    public override void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
     {
         winLineRenderer = GetComponent<LineRenderer>();
 
-        if (SceneManager.GetActiveScene().name == "GamePlay")
+        if (scene.name == "Gameplay")
         {
             inputManager = InputManager.Instance;
             swipeDetection = SwipeDetection.Instance;
             scoreManager = ScoreManager.Instance;
         }
-
+        
         ResetBoard();
 
-        if (currentPlayer == Connect4Player.Black)
-        {
-            currentDisc = Instantiate<GameObject>(blackDisc, transform);
-            transform.rotation = Quaternion.identity;
+        currentPlayer = Connect4Player.Black;
+        transform.rotation = Quaternion.identity;
 
-            if (isBlackDiscAI)
-            {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-
-                List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
-                int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
-                StartCoroutine(RunAITurn(targetColumn));
-            }
-            else
-            {
-                if (inputManager != null)
-                    inputManager.enabled = true;
-            }
-        }
-        else if (currentPlayer == Connect4Player.White)
-        {
-            currentDisc = Instantiate<GameObject>(whiteDisc, transform);
-            transform.rotation = Quaternion.Euler(0.0f, 180.0f, 0.0f);
-
-            if (isWhiteDiscAI)
-            {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-
-                List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
-                int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
-                StartCoroutine(RunAITurn(targetColumn));
-            }
-            else
-            {
-                if (inputManager != null)
-                    inputManager.enabled = true;
-            }
-        }
-        currentDiscRow = -1;
-        currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
+        SpawnNextDisc();
     }
 
     void ResetBoard()
     {
+        StopAllCoroutines();
+
         if (inputManager != null)
             inputManager.OnStartTouch -= ResetGame;
 
@@ -140,6 +103,50 @@ public class Connect4Board : MonoBehaviour
         GameObject [] whiteDiscs = GameObject.FindGameObjectsWithTag("White Disc");
         foreach (GameObject disc in whiteDiscs)
             Destroy(disc);
+    }
+
+    void SpawnNextDisc()
+    {
+        List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
+        int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
+
+        if (currentPlayer == Connect4Player.Black)
+        {
+            currentDisc = Instantiate<GameObject>(blackDisc, transform);
+
+            if (isBlackDiscAI)
+            {
+                if (inputManager != null)
+                    inputManager.enabled = false;
+                
+                StartCoroutine(RunAITurn(targetColumn));
+            }
+            else
+            {
+                if (inputManager != null)
+                    inputManager.enabled = true;
+            }
+        }
+        else if (currentPlayer == Connect4Player.White)
+        {
+            currentDisc = Instantiate<GameObject>(whiteDisc, transform);
+
+            if (isWhiteDiscAI)
+            {
+                if (inputManager != null)
+                    inputManager.enabled = false;
+
+                StartCoroutine(RunAITurn(6 - targetColumn));
+            }
+            else
+            {
+                if (inputManager != null)
+                    inputManager.enabled = true;
+            }
+        }
+
+        currentDiscRow = -1;
+        currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
     }
 
     public float GetXAt(int col, Connect4Player player)
@@ -381,47 +388,8 @@ public class Connect4Board : MonoBehaviour
 
         yield return 0;
 
-        List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
-        int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
-
-        if (currentPlayer == Connect4Player.Black)
-        {
-            currentDisc = Instantiate<GameObject>(blackDisc, transform);
-
-            if (isBlackDiscAI)
-            {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-                
-                StartCoroutine(RunAITurn(targetColumn));
-            }
-            else
-            {
-                if (inputManager != null)
-                    inputManager.enabled = true;
-            }
-        }
-        else if (currentPlayer == Connect4Player.White)
-        {
-            currentDisc = Instantiate<GameObject>(whiteDisc, transform);
-
-            if (isWhiteDiscAI)
-            {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-
-                StartCoroutine(RunAITurn(6 - targetColumn));
-            }
-            else
-            {
-                if (inputManager != null)
-                    inputManager.enabled = true;
-            }
-        }
-
-        currentDiscRow = -1;
-        currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
-
+        SpawnNextDisc();
+        
         if (swipeDetection != null)
             swipeDetection.enabled = true;
     }
@@ -486,10 +454,13 @@ public class Connect4Board : MonoBehaviour
             {
                 SetWinner(currentPlayer);
 
-                if (isBlackDiscAI && isWhiteDiscAI)
-                    yield return StartCoroutine("AutoReset");
-                else
-                    yield return 0;
+                if (inputManager == null)
+                {
+                    if (isBlackDiscAI && isWhiteDiscAI)
+                        yield return StartCoroutine("AutoReset");
+                    else
+                        yield return 0;
+                }
             }
             else
             {
@@ -577,5 +548,15 @@ public class Connect4Board : MonoBehaviour
     {
         ResetBoard();
         StartCoroutine(RotateBoard());
+    }
+
+    public void SetBlackDiscAI(bool AI)
+    {
+        isBlackDiscAI = AI;
+    }
+
+    public void SetWhiteDiscAI(bool AI)
+    {
+        isWhiteDiscAI = AI;
     }
 }
