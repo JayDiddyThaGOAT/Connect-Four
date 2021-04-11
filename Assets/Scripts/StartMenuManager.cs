@@ -38,6 +38,9 @@ public class StartMenuManager : MonoBehaviour
 
     [SerializeField]
     private float PanelShiftDuration = 0.25f;
+
+    float StartMenuButtonPanelWidth, DiscSelectionPanelWidth;
+
 #pragma warning restore 0649
 
     private Connect4Board connect4Board;
@@ -52,6 +55,9 @@ public class StartMenuManager : MonoBehaviour
         
         BlackDiscButtonTransform = BlackDiscButton.GetComponent<RectTransform>();
         WhiteDiscButtonTransform = WhiteDiscButton.GetComponent<RectTransform>();
+
+        StartMenuButtonPanelWidth = StartMenuButtonPanel.GetComponent<RectTransform>().sizeDelta.x;
+        DiscSelectionPanelWidth = DiscSelectionPanel.GetComponent<RectTransform>().sizeDelta.x;
     }
 
     private IEnumerator LoadDiscSelectionPanel()
@@ -61,10 +67,10 @@ public class StartMenuManager : MonoBehaviour
         {
             t += Time.deltaTime;
 
-            float StartMenuButtonPanelPositionX = Mathf.Lerp(0, -1440, t / PanelShiftDuration);
+            float StartMenuButtonPanelPositionX = Mathf.Lerp(0, -StartMenuButtonPanelWidth - 140, t / PanelShiftDuration);
             StartMenuButtonPanel.localPosition = new Vector3(StartMenuButtonPanelPositionX, StartMenuButtonPanel.localPosition.y, StartMenuButtonPanel.localPosition.z);
 
-            float DiscSelectionPanelPositionX = Mathf.Lerp(1440, 0, t / PanelShiftDuration);
+            float DiscSelectionPanelPositionX = Mathf.Lerp(DiscSelectionPanelWidth, 0, t / PanelShiftDuration);
             DiscSelectionPanel.localPosition = new Vector3(DiscSelectionPanelPositionX, DiscSelectionPanel.localPosition.y, DiscSelectionPanel.localPosition.z);
 
             yield return null;
@@ -80,24 +86,20 @@ public class StartMenuManager : MonoBehaviour
 
         BlackDiscPointer.enabled = false;
         WhiteDiscPointer.enabled = false;
-        
-        InstructionsText.text = "";
 
         float t = 0;
         while (t <= PanelShiftDuration)
         {
             t += Time.deltaTime;
 
-            float StartMenuButtonPanelPositionX = Mathf.Lerp(-1440, 0, t / PanelShiftDuration);
+            float StartMenuButtonPanelPositionX = Mathf.Lerp(-StartMenuButtonPanelWidth - 140, 0, t / PanelShiftDuration);
             StartMenuButtonPanel.localPosition = new Vector3(StartMenuButtonPanelPositionX, StartMenuButtonPanel.localPosition.y, StartMenuButtonPanel.localPosition.z);
 
-            float DiscSelectionPanelPositionX = Mathf.Lerp(0, 1440, t / PanelShiftDuration);
+            float DiscSelectionPanelPositionX = Mathf.Lerp(0, DiscSelectionPanelWidth, t / PanelShiftDuration);
             DiscSelectionPanel.localPosition = new Vector3(DiscSelectionPanelPositionX, DiscSelectionPanel.localPosition.y, DiscSelectionPanel.localPosition.z);
 
             yield return null;
         }
-
-        InstructionsText.text = "Select A Disc";
     }
 
     public void GoToDiscSelectionPanel()
@@ -116,7 +118,6 @@ public class StartMenuManager : MonoBehaviour
         BlackDiscPointer.enabled = false;
 
         PlayButton.interactable = true;
-        InstructionsText.text = "Press Play Button";
     }
 
     public void SelectBlackDisc()
@@ -125,7 +126,6 @@ public class StartMenuManager : MonoBehaviour
         WhiteDiscPointer.enabled = false;
 
         PlayButton.interactable = true;
-        InstructionsText.text = "Press Play Button";
     }
 
     public void PlayGame()
