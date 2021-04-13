@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public enum Connect4Player {None, Black, White}
+public enum Connect4Player {None = 0, Black = 1, White = 2}
 
 public class Connect4Board : SingletonPersistent<Connect4Board>
 {
