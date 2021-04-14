@@ -28,6 +28,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     public void ConnectToQuickGame()
     {
+        startMenuManager.SetQuickGameButtonInteractable(false);
+        startMenuManager.SetSinglePlayerButtonInteractable(false);
+
         if (PhotonNetwork.IsConnected)
         {
             Debug.Log($"Connected to server. Looking for random room");

@@ -135,7 +135,7 @@ GameObject:
   - component: {fileID: 23344602}
   - component: {fileID: 23344601}
   m_Layer: 5
-  m_Name: ButtonText
+  m_Name: QuickGameButtonText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -400,7 +400,7 @@ Animator:
   m_GameObject: {fileID: 51301986}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 611030b71e2b8d843935753a525bdaa2, type: 2}
+  m_Controller: {fileID: 9100000, guid: 78229fbbe27f9664b95a88f56bade9cd, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1594,9 +1594,9 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 914073363}
-  m_Enabled: 0
+  m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 611030b71e2b8d843935753a525bdaa2, type: 2}
+  m_Controller: {fileID: 9100000, guid: ca63e2424ef86134588c525dda486f53, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1920,7 +1920,7 @@ GameObject:
   - component: {fileID: 1000251991}
   - component: {fileID: 1000251990}
   m_Layer: 5
-  m_Name: ButtonText
+  m_Name: MatchmakingButtonText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2232,6 +2232,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   StartMenuButtonPanel: {fileID: 318550860}
   DiscSelectionPanel: {fileID: 346262972}
+  QuickGameButton: {fileID: 276344141}
+  MatchmakingButton: {fileID: 914073366}
+  SinglePlayerButton: {fileID: 51301988}
   BlackDiscButton: {fileID: 2101283484}
   WhiteDiscButton: {fileID: 168162215}
   BackButton: {fileID: 753509862}
@@ -2726,7 +2729,7 @@ GameObject:
   - component: {fileID: 2130292371}
   - component: {fileID: 2130292370}
   m_Layer: 5
-  m_Name: ButtonText
+  m_Name: SinglePlayerButtonText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

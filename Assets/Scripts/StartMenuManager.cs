@@ -20,6 +20,15 @@ public class StartMenuManager : Singleton<StartMenuManager>
     [SerializeField]
     private RectTransform DiscSelectionPanel;
 
+     [SerializeField]
+    private Button QuickGameButton;
+
+    [SerializeField]
+    private Button MatchmakingButton;
+
+    [SerializeField]
+    private Button SinglePlayerButton;
+
     [SerializeField]
     private Button BlackDiscButton;
 
@@ -138,6 +147,10 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
             yield return null;
         }
+        
+        SetQuickGameButtonInteractable(true);
+        SetSinglePlayerButtonInteractable(true);
+
     }
 
     public void GoToDiscSelectionPanel()
@@ -162,6 +175,21 @@ public class StartMenuManager : Singleton<StartMenuManager>
     public void SetPlayButtonInteractable(bool interactable)
     {
         PlayButton.interactable = interactable;
+    }
+
+     public void SetQuickGameButtonInteractable(bool interactable)
+    {
+        QuickGameButton.interactable = interactable;
+    }
+
+     public void SetMatchmakingButtonInteractable(bool interactable)
+    {
+        MatchmakingButton.interactable = interactable;
+    }
+
+     public void SetSinglePlayerButtonInteractable(bool interactable)
+    {
+        SinglePlayerButton.interactable = interactable;
     }
 
     [PunRPC]
