@@ -28,8 +28,11 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     public void ConnectToQuickGame()
     {
-        startMenuManager.SetQuickGameButtonInteractable(false);
-        startMenuManager.SetSinglePlayerButtonInteractable(false);
+        if (startMenuManager != null)
+        {
+            startMenuManager.SetQuickGameButtonInteractable(false);
+            startMenuManager.SetSinglePlayerButtonInteractable(false);
+        }
 
         if (PhotonNetwork.IsConnected)
         {
@@ -65,7 +68,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
             PhotonNetwork.LocalPlayer.NickName = "Player 2";
         
         PrepareDiscChoices();
-        startMenuManager.GoToDiscSelectionPanel();
+
+        if (startMenuManager != null)
+            startMenuManager.GoToDiscSelectionPanel();
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
@@ -79,6 +84,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         var otherPlayerDiscColor = (Connect4Player)otherPlayer.CustomProperties[DISC_COLOR];
         var localPlayerDiscColor = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties[DISC_COLOR];
+
+        if (startMenuManager == null)
+            return;
 
         startMenuManager.SetPlayerNameVisiblity((int)otherPlayerDiscColor, false);
 
@@ -101,6 +109,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
     {
+        if (startMenuManager == null)
+            return;
+        
         if (changedProps.ContainsKey(DISC_COLOR))
         {
             var targetPlayerDiscColor = (Connect4Player)changedProps[DISC_COLOR];
@@ -173,6 +184,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Player {newMasterClient.ActorNumber} is the new host");
 
+        if (startMenuManager == null)
+            return;
+
         if (newMasterClient.CustomProperties.ContainsKey(DISC_COLOR))
         {
             newMasterClient.NickName = "Player 1";
@@ -187,6 +201,11 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     public override void OnDisconnected(DisconnectCause cause)
     {
         Debug.Log($"Leaving the server");
+
+        if (startMenuManager == null)
+            return;
+
+        startMenuManager.SetInstructionsText("Tap A Disc");
 
         startMenuManager.SetDiscButtonInteractable((int)Connect4Player.Black, true);
         startMenuManager.SetDiscButtonInteractable((int)Connect4Player.White, true);
@@ -211,6 +230,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     void PrepareDiscChoices()
     {
+        if (startMenuManager == null)
+            return;
+
         SelectDisc(0);
 
         startMenuManager.SetPlayButtonInteractable(false);

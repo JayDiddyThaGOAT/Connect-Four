@@ -75,20 +75,12 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     private Connect4Board connect4Board;
 
-    private RectTransform BlackDiscButtonTransform;
-
-    private RectTransform WhiteDiscButtonTransform;
-
     void Start()
     {
         networkManager = GetComponent<NetworkManager>();
 
         connect4Board = Connect4Board.Instance;
-        SetConnect4BoardAIs(true, true);
         
-        BlackDiscButtonTransform = BlackDiscButton.GetComponent<RectTransform>();
-        WhiteDiscButtonTransform = WhiteDiscButton.GetComponent<RectTransform>();
-
         StartMenuButtonPanelWidth = StartMenuButtonPanel.GetComponent<RectTransform>().sizeDelta.x;
         DiscSelectionPanelWidth = DiscSelectionPanel.GetComponent<RectTransform>().sizeDelta.x;
     }
