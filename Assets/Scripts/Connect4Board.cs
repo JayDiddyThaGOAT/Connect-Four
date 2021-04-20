@@ -1,7 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
+using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
 
 public enum Connect4Player {None = 0, Black = 1, White = 2}
 
@@ -51,22 +56,37 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     private int currentDiscCol;
 
+    public override void Awake()
+    {
+        base.Awake();
+        winLineRenderer = GetComponent<LineRenderer>();
+    }
+
     public override void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
     {
-        winLineRenderer = GetComponent<LineRenderer>();
+        currentPlayer = Connect4Player.Black;
+        transform.rotation = Quaternion.identity;
 
         if (scene.name == "Gameplay")
         {
             inputManager = InputManager.Instance;
             swipeDetection = SwipeDetection.Instance;
             scoreManager = ScoreManager.Instance;
+
+            if (PhotonNetwork.IsConnected)
+            {
+                inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
+                isBlackDiscAI = false;
+                isWhiteDiscAI = false;
+            }
+        }
+        else if (scene.name == "StartMenu")
+        {
+            isBlackDiscAI = true;
+            isWhiteDiscAI = true;
         }
         
         ResetBoard();
-
-        currentPlayer = Connect4Player.Black;
-        transform.rotation = Quaternion.identity;
-
         SpawnNextDisc();
     }
 
@@ -362,40 +382,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     {
         return winnerPlayer;
     }
-
-    public IEnumerator RotateBoard()
-    {
-        Quaternion startRotation = transform.rotation;
-        Quaternion targetRotation = startRotation * Quaternion.Euler(0.0f, -180.0f, 0.0f);
-
-        float t = 0;
-        while (t <= rotateDuration)
-        {
-            t += Time.deltaTime;
-            transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t / rotateDuration);
-
-            yield return null;
-        }
-
-        transform.rotation = targetRotation;
-        yield return StartCoroutine(ChangeTurn());
-    }
-
-    public IEnumerator ChangeTurn()
-    {
-        if (currentPlayer == Connect4Player.Black)
-            currentPlayer = Connect4Player.White;
-        else
-            currentPlayer = Connect4Player.Black;
-
-        yield return 0;
-
-        SpawnNextDisc();
-        
-        if (swipeDetection != null)
-            swipeDetection.enabled = true;
-    }
-
     IEnumerator ShiftToColumn(int targetCol)
     {
         float targetX = GetXAt(targetCol, currentPlayer);
@@ -496,6 +482,39 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         }
         else
             yield return 0;
+    }
+
+    public IEnumerator RotateBoard()
+    {
+        Quaternion startRotation = transform.rotation;
+        Quaternion targetRotation = startRotation * Quaternion.Euler(0.0f, -180.0f, 0.0f);
+
+        float t = 0;
+        while (t <= rotateDuration)
+        {
+            t += Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t / rotateDuration);
+
+            yield return null;
+        }
+
+        transform.rotation = targetRotation;
+        yield return StartCoroutine(ChangeTurn());
+    }
+
+    public IEnumerator ChangeTurn()
+    {
+        if (currentPlayer == Connect4Player.Black)
+            currentPlayer = Connect4Player.White;
+        else
+            currentPlayer = Connect4Player.Black;
+
+        yield return 0;
+
+        SpawnNextDisc();
+        
+        if (swipeDetection != null)
+            swipeDetection.enabled = true;
     }
 
     private IEnumerator RunAITurn(int targetCol)

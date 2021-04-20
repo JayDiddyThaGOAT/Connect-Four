@@ -222,8 +222,6 @@ public class StartMenuManager : Singleton<StartMenuManager>
     [PunRPC]
     public void PlayGameRPC()
     {
-        SetConnect4BoardAIs(false, false);
-
         PhotonNetwork.CurrentRoom.IsOpen = false;
         PhotonNetwork.LoadLevel("Gameplay");
     }
