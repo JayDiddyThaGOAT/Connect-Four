@@ -81,8 +81,11 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
         connect4Board = Connect4Board.Instance;
         
-        StartMenuButtonPanelWidth = StartMenuButtonPanel.GetComponent<RectTransform>().sizeDelta.x;
-        DiscSelectionPanelWidth = DiscSelectionPanel.GetComponent<RectTransform>().sizeDelta.x;
+        if (SceneManager.GetActiveScene().name == "StartMenu")
+        {
+            StartMenuButtonPanelWidth = StartMenuButtonPanel.GetComponent<RectTransform>().sizeDelta.x;
+            DiscSelectionPanelWidth = DiscSelectionPanel.GetComponent<RectTransform>().sizeDelta.x;
+        }
     }
 
     void SetConnect4BoardAIs(bool blackAI, bool whiteAI)
@@ -293,7 +296,7 @@ public class StartMenuManager : Singleton<StartMenuManager>
             int opponentPlayerIndex = PhotonNetwork.LocalPlayer == PhotonNetwork.PlayerList[0] ? 1 : 0; 
             Player opponentPlayer = PhotonNetwork.PlayerList[opponentPlayerIndex];
             
-            if (opponentPlayer.CustomProperties.ContainsKey(READY_TO_PLAY))
+            if (opponentPlayer.CustomProperties.ContainsKey(READY_TO_PLAY) && (bool)opponentPlayer.CustomProperties[READY_TO_PLAY])
                networkManager.photonView.RPC("PlayGameRPC", RpcTarget.All);
         }
     }

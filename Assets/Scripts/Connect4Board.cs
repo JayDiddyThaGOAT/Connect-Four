@@ -40,7 +40,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     private Connect4Player[,] boardMatrix = new Connect4Player[6, 7];
     private Connect4Player winnerPlayer = Connect4Player.None;
-
     private LineRenderer winLineRenderer;
     private Vector3 startLinePosition, endLinePosition;
 
@@ -50,16 +49,45 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     private ScoreManager scoreManager;
 
+    private GameManager gameManager;
+
     private GameObject currentDisc;
 
     private int currentDiscRow;
 
     private int currentDiscCol;
 
+    private RaiseEventOptions raiseEventOptions;
+
+    private SendOptions sendOptions;
+
+    private const byte SPAWN_DISC = 0;
+
+    private const byte MOVE_DISC = 1;
+
+    private const byte DROP_DISC = 2;
+
+    private const byte ROTATE_BOARD = 3;
+
+    private const byte CHANGE_TURN = 4;
+
+    private const byte WON_GAME = 5;
+
+    private const byte TIE_GAME = 6;
+
+    [HideInInspector]
+    public Connect4Player WinnerPlayer{
+        get{return winnerPlayer;}
+    }
+
+
     public override void Awake()
     {
         base.Awake();
+
         winLineRenderer = GetComponent<LineRenderer>();
+        raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.Others};
+        sendOptions = SendOptions.SendReliable;
     }
 
     public override void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
@@ -72,30 +100,36 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             inputManager = InputManager.Instance;
             swipeDetection = SwipeDetection.Instance;
             scoreManager = ScoreManager.Instance;
+            gameManager = GameManager.Instance;
 
             if (PhotonNetwork.IsConnected)
             {
-                inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
                 isBlackDiscAI = false;
                 isWhiteDiscAI = false;
+
+                PhotonNetwork.NetworkingClient.EventReceived += OnEventReceived;
+
+                PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
+                inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
             }
         }
         else if (scene.name == "StartMenu")
         {
+            inputManager = null;
+            swipeDetection = null;
+            scoreManager = null;
+            gameManager = null;
+
             isBlackDiscAI = true;
             isWhiteDiscAI = true;
         }
-        
+
         ResetBoard();
         SpawnNextDisc();
     }
-
-    void ResetBoard()
+    public void ResetBoard()
     {
         StopAllCoroutines();
-
-        if (inputManager != null)
-            inputManager.OnStartTouch -= ResetGame;
 
         if (swipeDetection != null)
         {
@@ -106,6 +140,9 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
         if (scoreManager != null)
             scoreManager.SetTieTextActive(false);
+
+        if (gameManager != null)
+            gameManager.SetResetButtonActive(false);
 
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
@@ -127,48 +164,64 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             Destroy(disc);
     }
 
+    
     void SpawnNextDisc()
     {
-        List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
-        int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
-
-        if (currentPlayer == Connect4Player.Black)
+        if (!(PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay"))
         {
-            currentDisc = Instantiate<GameObject>(blackDisc, transform);
+            List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
+            int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
 
-            if (isBlackDiscAI)
+            if (currentPlayer == Connect4Player.Black)
             {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-                
-                StartCoroutine(RunAITurn(targetColumn));
+                currentDisc = Instantiate<GameObject>(blackDisc, transform);
+
+                if (isBlackDiscAI)
+                {
+                    if (inputManager != null)
+                        inputManager.enabled = false;
+                    
+                    StartCoroutine(RunAITurn(targetColumn));
+                }
+                else
+                {
+                    if (inputManager != null)
+                        inputManager.enabled = true;
+                }
             }
-            else
+            else if (currentPlayer == Connect4Player.White)
             {
-                if (inputManager != null)
-                    inputManager.enabled = true;
+                currentDisc = Instantiate<GameObject>(whiteDisc, transform);
+
+                if (isWhiteDiscAI)
+                {
+                    if (inputManager != null)
+                        inputManager.enabled = false;
+
+                    StartCoroutine(RunAITurn(6 - targetColumn));
+                }
+                else
+                {
+                    if (inputManager != null)
+                        inputManager.enabled = true;
+                }
+            }
+
+            currentDiscRow = -1;
+            currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
+        }
+        else
+        {
+            if ((Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer)
+            {
+                currentDisc = Instantiate<GameObject>(currentPlayer == Connect4Player.Black ? blackDisc : whiteDisc, transform);
+                currentDiscRow = -1;
+                currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
+
+                object[] data = new object[]{(int)currentPlayer};
+                PhotonNetwork.RaiseEvent(SPAWN_DISC, data, raiseEventOptions, sendOptions);
             }
         }
-        else if (currentPlayer == Connect4Player.White)
-        {
-            currentDisc = Instantiate<GameObject>(whiteDisc, transform);
-
-            if (isWhiteDiscAI)
-            {
-                if (inputManager != null)
-                    inputManager.enabled = false;
-
-                StartCoroutine(RunAITurn(6 - targetColumn));
-            }
-            else
-            {
-                if (inputManager != null)
-                    inputManager.enabled = true;
-            }
-        }
-
-        currentDiscRow = -1;
-        currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
     }
 
     public float GetXAt(int col, Connect4Player player)
@@ -343,10 +396,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         }
 
         if (inputManager != null)
-        {
-            inputManager.enabled = true;
-            inputManager.OnStartTouch += ResetGame;
-        }
+            inputManager.enabled = false;
+
+        if (gameManager != null)
+            gameManager.SetResetButtonActive(true);
 
         winnerPlayer = player;
         winLineRenderer.enabled = true;
@@ -361,6 +414,14 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 scoreManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
             else if (winnerPlayer == Connect4Player.White)
                 scoreManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+        }
+
+        if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+        {
+            int winnerScore = player == Connect4Player.Black ? PlayerPrefs.GetInt("Black Disc Score") : PlayerPrefs.GetInt("White Disc Score");
+
+            object[] data = new object[]{(int)player, startLinePosition, endLinePosition, winnerScore};
+            PhotonNetwork.RaiseEvent(WON_GAME, data, raiseEventOptions, sendOptions);
         }
     }
 
@@ -391,6 +452,8 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             if (swipeDetection != null)
                 swipeDetection.enabled = false;
 
+            object [] data = new object[2];
+
             float startX = GetXAt(currentDiscCol, currentPlayer);
 
             float t = 0;
@@ -400,11 +463,25 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 float currentX = Mathf.Lerp(startX, targetX, t / discShiftDuration);
                 currentDisc.transform.position = new Vector3(currentX, currentDisc.transform.position.y, currentDisc.transform.position.z);
 
+                if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+                {
+                    data[0] = currentDisc.transform.position;
+                    data[1] = null;
+                    PhotonNetwork.RaiseEvent(MOVE_DISC, data, raiseEventOptions, sendOptions);
+                }
+
                 yield return null;
             }
 
             currentDisc.transform.position = new Vector3(targetX, currentDisc.transform.position.y, currentDisc.transform.position.z);
             currentDiscCol = targetCol;
+
+            if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+            {
+                data[0] = currentDisc.transform.position;
+                data[1] = currentDiscCol;
+                PhotonNetwork.RaiseEvent(MOVE_DISC, data, raiseEventOptions, sendOptions);
+            }
 
             if (swipeDetection != null)
                 swipeDetection.enabled = true;
@@ -421,6 +498,8 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             if (swipeDetection != null)
                 swipeDetection.enabled = false;
 
+            object[] data = new object[4];
+
             float startY = currentDisc.transform.position.y;
             float targetY = GetYAt(targetRow);
 
@@ -431,12 +510,32 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 float currentY = Mathf.Lerp(startY, targetY, t / discDropDuration);
                 currentDisc.transform.position = new Vector3(currentDisc.transform.position.x, currentY, currentDisc.transform.position.z);
 
+                if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+                {
+                    data[0] = currentDisc.transform.position;
+                    data[1] = null;
+                    data[2] = null;
+                    data[3] = null;
+
+                    PhotonNetwork.RaiseEvent(DROP_DISC, data, raiseEventOptions, sendOptions);
+                }
+
                 yield return null;
             }
 
             currentDisc.transform.position = new Vector3(currentDisc.transform.position.x, targetY, currentDisc.transform.position.z);
             currentDiscRow = targetRow;
             PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix());
+
+            if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+            {
+                data[0] = currentDisc.transform.position;
+                data[1] = (int)currentPlayer;
+                data[2] = currentDiscRow;
+                data[3] = currentDiscCol;
+
+                PhotonNetwork.RaiseEvent(DROP_DISC, data, raiseEventOptions, sendOptions);
+            }
 
             if (IsWinner(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix()))
             {
@@ -467,7 +566,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                         scoreManager.SetTieTextActive(true);
 
                     if (inputManager != null)
-                        inputManager.OnStartTouch += ResetGame;
+                        inputManager.enabled = false;
                     else
                     {
                         if (isBlackDiscAI && isWhiteDiscAI)
@@ -475,6 +574,12 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                         else
                             yield return 0;
                     }
+
+                    if (gameManager != null)
+                        gameManager.SetResetButtonActive(true);
+
+                    if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+                        PhotonNetwork.RaiseEvent(TIE_GAME, null, raiseEventOptions, sendOptions);
                 }
                 else
                     yield return StartCoroutine(RotateBoard());
@@ -489,32 +594,57 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         Quaternion startRotation = transform.rotation;
         Quaternion targetRotation = startRotation * Quaternion.Euler(0.0f, -180.0f, 0.0f);
 
+        object[] data = new object[1];
+
         float t = 0;
         while (t <= rotateDuration)
         {
             t += Time.deltaTime;
             transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t / rotateDuration);
 
+            if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+            {
+                data[0] = transform.localEulerAngles;
+                PhotonNetwork.RaiseEvent(ROTATE_BOARD, data, raiseEventOptions, sendOptions);
+            }
+
             yield return null;
         }
 
         transform.rotation = targetRotation;
+
+        if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+        {
+            data[0] = transform.localEulerAngles;
+            PhotonNetwork.RaiseEvent(ROTATE_BOARD, data, raiseEventOptions, sendOptions);
+        }
+
         yield return StartCoroutine(ChangeTurn());
     }
 
     public IEnumerator ChangeTurn()
     {
-        if (currentPlayer == Connect4Player.Black)
+        if (Mathf.Approximately(transform.localEulerAngles.y, Mathf.Abs(180.0f)))
             currentPlayer = Connect4Player.White;
         else
             currentPlayer = Connect4Player.Black;
-
-        yield return 0;
-
-        SpawnNextDisc();
         
+        yield return new WaitForEndOfFrame();
+
         if (swipeDetection != null)
             swipeDetection.enabled = true;
+        
+        if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
+        {
+            inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
+
+            object[] data = new object[]{(int)currentPlayer, !((bool)inputManager.enabled)};
+            PhotonNetwork.RaiseEvent(CHANGE_TURN, data, raiseEventOptions, sendOptions);
+        }
+        else
+        {
+            SpawnNextDisc();
+        }
     }
 
     private IEnumerator RunAITurn(int targetCol)
@@ -533,7 +663,116 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     private IEnumerator AutoReset()
     {
         yield return new WaitForSeconds(aiAutoResetDelay);
-        ResetGame(Vector2.zero);
+        GameManager.Instance.ResetGame();
+    }
+
+    void OnEventReceived(EventData obj)
+    {
+        if (obj.Code == SPAWN_DISC)
+        {
+            object[] data = (object[])obj.CustomData;
+            
+            currentPlayer = (Connect4Player)data[0];
+            currentDisc = Instantiate<GameObject>(currentPlayer == Connect4Player.Black ? blackDisc : whiteDisc, transform);
+
+            currentDiscRow = -1;
+            currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
+        }
+        else if (obj.Code == MOVE_DISC)
+        {
+            object[] data = (object[])obj.CustomData;
+
+            currentDisc.transform.position = (Vector3)data[0];
+            if (data[1] != null)
+                currentDiscCol = (int)data[1];
+        }
+        else if (obj.Code == DROP_DISC)
+        {
+            object[] data = (object[])obj.CustomData;
+
+            currentDisc.transform.position = (Vector3)data[0];
+            if (data[1] != null && data[2] != null && data[3] != null)
+            {
+                currentPlayer = (Connect4Player)data[1];
+                currentDiscRow = (int)data[2];
+                currentDiscCol = (int)data[3];
+
+                PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix());
+            }
+        }
+        else if (obj.Code == ROTATE_BOARD)
+        {
+            object[] data = (object[])obj.CustomData;
+
+            transform.localEulerAngles = (Vector3)data[0];
+        }
+        else if (obj.Code == CHANGE_TURN)
+        {
+            object[] data = (object[])obj.CustomData;
+            
+            currentPlayer = (Connect4Player)data[0];
+            
+            inputManager.enabled = (bool)data[1];
+
+            SpawnNextDisc();
+
+            if (swipeDetection != null)
+                swipeDetection.enabled = true;
+        }
+        else if (obj.Code == WON_GAME)
+        {
+            currentDisc = null;
+
+            if (swipeDetection != null)
+            {
+                swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
+                swipeDetection.OnSwipeRight -= ShiftDiscToRight;
+                swipeDetection.OnSwipeDown -= DropDisc;
+            }
+
+            if (inputManager != null)
+                inputManager.enabled = false;
+
+            if (gameManager != null)
+                gameManager.SetResetButtonActive(true);
+
+            object[] data = (object[])obj.CustomData;
+
+            winnerPlayer = (Connect4Player)data[0];
+            winLineRenderer.enabled = true;
+            winLineRenderer.startColor = winnerPlayer == Connect4Player.Black ? Color.white : Color.black;
+            winLineRenderer.endColor = winLineRenderer.startColor;
+            winLineRenderer.SetPosition(0, (Vector3)data[1]);
+            winLineRenderer.SetPosition(1, (Vector3)data[2]);
+
+            if (scoreManager != null)
+            {
+                if (winnerPlayer == Connect4Player.Black)
+                    scoreManager.SetBlackDiscScore((int)data[3]);
+                else if (winnerPlayer == Connect4Player.White)
+                    scoreManager.SetWhiteDiscScore((int)data[3]);
+            }
+        }
+        else if (obj.Code == TIE_GAME)
+        {
+            currentDisc = null;
+
+            if (swipeDetection != null)
+            {
+                swipeDetection.OnSwipeLeft -= ShiftDiscToLeft;
+                swipeDetection.OnSwipeRight -= ShiftDiscToRight;
+                swipeDetection.OnSwipeDown -= DropDisc;
+            }
+
+            if (inputManager != null)
+                inputManager.enabled = false;
+
+            if (scoreManager != null)
+                scoreManager.SetTieTextActive(true);
+
+            if (gameManager != null)
+                gameManager.SetResetButtonActive(true);
+        }
     }
 
     void ShiftDiscToLeft()
@@ -564,13 +803,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     {
         StartCoroutine("DropDiscInBoard");
     }
-
-    public void ResetGame(Vector2 position, float time = 0.0f)
-    {
-        ResetBoard();
-        StartCoroutine(RotateBoard());
-    }
-
     public void SetBlackDiscAI(bool AI)
     {
         isBlackDiscAI = AI;

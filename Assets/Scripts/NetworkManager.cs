@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 using Photon.Pun;
 using Photon.Realtime;
@@ -15,19 +17,32 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     private StartMenuManager startMenuManager;
 
+    private Connect4Board connect4Board;
+
     void Start()
     {
-        startMenuManager = StartMenuManager.Instance;
+        PhotonNetwork.KeepAliveInBackground = 30;
+
+        if (SceneManager.GetActiveScene().name == "StartMenu")
+            startMenuManager = StartMenuManager.Instance;
     }
 
     void OnApplicationQuit()
     {
         if (PhotonNetwork.IsConnected)
+        {
             PhotonNetwork.Disconnect();
+        }
     }
 
     public void ConnectToQuickGame()
     {
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            Debug.LogError("Can't connect to the internet");
+            return;
+        }
+
         if (startMenuManager != null)
         {
             startMenuManager.SetQuickGameButtonInteractable(false);
@@ -85,26 +100,28 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         var otherPlayerDiscColor = (Connect4Player)otherPlayer.CustomProperties[DISC_COLOR];
         var localPlayerDiscColor = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties[DISC_COLOR];
 
-        if (startMenuManager == null)
-            return;
-
-        startMenuManager.SetPlayerNameVisiblity((int)otherPlayerDiscColor, false);
-
-        if (localPlayerDiscColor == Connect4Player.None)
+        if (startMenuManager != null)
         {
-            startMenuManager.SetInstructionsText("Tap A Disc");
+            startMenuManager.SetPlayerNameVisiblity((int)otherPlayerDiscColor, false);
 
-            if (otherPlayerDiscColor == Connect4Player.Black)
-                startMenuManager.SetDiscButtonInteractable((int)Connect4Player.Black, true);
-            else if (otherPlayerDiscColor == Connect4Player.White)
-                startMenuManager.SetDiscButtonInteractable((int)Connect4Player.White, true);
+            if (localPlayerDiscColor == Connect4Player.None)
+            {
+                startMenuManager.SetInstructionsText("Tap A Disc");
+
+                if (otherPlayerDiscColor == Connect4Player.Black)
+                    startMenuManager.SetDiscButtonInteractable((int)Connect4Player.Black, true);
+                else if (otherPlayerDiscColor == Connect4Player.White)
+                    startMenuManager.SetDiscButtonInteractable((int)Connect4Player.White, true);
+            }
+            else
+            {
+                startMenuManager.SetInstructionsText("Finding 2<sup>nd</sup> Player");
+            }
+
+            startMenuManager.SetPlayButtonInteractable(false);
         }
         else
-        {
-            startMenuManager.SetInstructionsText("Finding 2<sup>nd</sup> Player");
-        }
-
-        startMenuManager.SetPlayButtonInteractable(false);
+            PhotonNetwork.Disconnect();
     }
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
@@ -184,36 +201,45 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Player {newMasterClient.ActorNumber} is the new host");
 
-        if (startMenuManager == null)
-            return;
-
-        if (newMasterClient.CustomProperties.ContainsKey(DISC_COLOR))
+        if (startMenuManager != null)
         {
-            newMasterClient.NickName = "Player 1";
+            if (newMasterClient.CustomProperties.ContainsKey(DISC_COLOR))
+            {
+                newMasterClient.NickName = "Player 1";
 
-            Connect4Player newMasterClientColor = (Connect4Player)newMasterClient.CustomProperties[DISC_COLOR];
-            startMenuManager.SetPlayerName((int)newMasterClientColor, newMasterClient.NickName);
+                Connect4Player newMasterClientColor = (Connect4Player)newMasterClient.CustomProperties[DISC_COLOR];
+                startMenuManager.SetPlayerName((int)newMasterClientColor, newMasterClient.NickName);
+            }
+
+            startMenuManager.SetPlayButtonInteractable(false);
         }
-
-        startMenuManager.SetPlayButtonInteractable(false);
+        else
+        {
+            PhotonNetwork.Disconnect();
+        }
     }
 
     public override void OnDisconnected(DisconnectCause cause)
     {
         Debug.Log($"Leaving the server");
 
-        if (startMenuManager == null)
-            return;
+        if (startMenuManager != null)
+        {
+            startMenuManager.SetInstructionsText("Tap A Disc");
 
-        startMenuManager.SetInstructionsText("Tap A Disc");
+            startMenuManager.SetDiscButtonInteractable((int)Connect4Player.Black, true);
+            startMenuManager.SetDiscButtonInteractable((int)Connect4Player.White, true);
 
-        startMenuManager.SetDiscButtonInteractable((int)Connect4Player.Black, true);
-        startMenuManager.SetDiscButtonInteractable((int)Connect4Player.White, true);
+            startMenuManager.SetPlayerNameVisiblity((int)Connect4Player.Black, false);
+            startMenuManager.SetPlayerNameVisiblity((int)Connect4Player.White, false);
 
-        startMenuManager.SetPlayerNameVisiblity((int)Connect4Player.Black, false);
-        startMenuManager.SetPlayerNameVisiblity((int)Connect4Player.White, false);
-
-        startMenuManager.SetPlayButtonInteractable(false);
+            startMenuManager.SetPlayButtonInteractable(false);
+        }
+        else
+        {
+            PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
+            PhotonNetwork.LoadLevel("StartMenu");
+        }
     }
 
     #endregion

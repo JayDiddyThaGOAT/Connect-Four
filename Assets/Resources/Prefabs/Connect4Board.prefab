@@ -103,6 +103,7 @@ MonoBehaviour:
   discShiftDuration: 0.0625
   discDropDuration: 0.15
   aiMoveDelay: 0.25
+  aiAutoResetDelay: 2
   isBlackDiscAI: 0
   isWhiteDiscAI: 0
 --- !u!120 &1128017915
