@@ -13,21 +13,21 @@ public enum Connect4Player {None = 0, Black = 1, White = 2}
 public class Connect4Board : SingletonPersistent<Connect4Board>
 {
 #pragma warning disable 0649
-    [SerializeField]
-    private GameObject blackDisc, whiteDisc;
-
-    [SerializeField]
-    private Connect4Player currentPlayer = Connect4Player.Black;
-
+    [Header("Board Settings")]
     [SerializeField]
     private float rotateDuration = 0.25f;
 
+    [Header("Disc Settings")]
+    [SerializeField]
+    private Connect4Player currentPlayer = Connect4Player.Black;
+    
     [SerializeField]
     private float discShiftDuration = 0.25f;
 
     [SerializeField]
     private float discDropDuration = 0.5f;
 
+    [Header("AI Settings")]
     [SerializeField]
     private float aiMoveDelay = 0.25f;
 
@@ -48,6 +48,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     private SwipeDetection swipeDetection;
 
     private ScoreManager scoreManager;
+
+    private ObjectPooler blackDiscObjectPool;
+
+    private ObjectPooler whiteDiscObjectPool;
 
     private GameManager gameManager;
 
@@ -87,7 +91,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
         winLineRenderer = GetComponent<LineRenderer>();
         raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.Others};
-        sendOptions = SendOptions.SendReliable;
+        sendOptions = SendOptions.SendUnreliable;
+
+        blackDiscObjectPool = GetComponents<ObjectPooler>()[0];
+        whiteDiscObjectPool = GetComponents<ObjectPooler>()[1];
     }
 
     public override void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)
@@ -112,9 +119,11 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
                 inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
             }
-        }
+        }   
         else if (scene.name == "StartMenu")
         {
+            PhotonNetwork.NetworkingClient.EventReceived -= OnEventReceived;
+
             inputManager = null;
             swipeDetection = null;
             scoreManager = null;
@@ -147,6 +156,14 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
 
+        GameObject [] blackDiscs = GameObject.FindGameObjectsWithTag("Black Disc");
+        foreach (GameObject disc in blackDiscs)
+            blackDiscObjectPool.ReturnPooledObject(disc);
+
+        GameObject [] whiteDiscs = GameObject.FindGameObjectsWithTag("White Disc");
+        foreach (GameObject disc in whiteDiscs)
+            whiteDiscObjectPool.ReturnPooledObject(disc);
+        
         for (int row = 0; row < 6; row++)
         {
             for (int col = 0; col < 7; col++)
@@ -154,14 +171,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 boardMatrix[row, col] = Connect4Player.None;
             }
         }
-
-        GameObject [] blackDiscs = GameObject.FindGameObjectsWithTag("Black Disc");
-        foreach (GameObject disc in blackDiscs)
-            Destroy(disc);
-
-        GameObject [] whiteDiscs = GameObject.FindGameObjectsWithTag("White Disc");
-        foreach (GameObject disc in whiteDiscs)
-            Destroy(disc);
     }
 
     
@@ -174,7 +183,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
             if (currentPlayer == Connect4Player.Black)
             {
-                currentDisc = Instantiate<GameObject>(blackDisc, transform);
+                currentDisc = blackDiscObjectPool.GetPooledObject();
 
                 if (isBlackDiscAI)
                 {
@@ -191,7 +200,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             }
             else if (currentPlayer == Connect4Player.White)
             {
-                currentDisc = Instantiate<GameObject>(whiteDisc, transform);
+                currentDisc = whiteDiscObjectPool.GetPooledObject();
 
                 if (isWhiteDiscAI)
                 {
@@ -214,7 +223,11 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         {
             if ((Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer)
             {
-                currentDisc = Instantiate<GameObject>(currentPlayer == Connect4Player.Black ? blackDisc : whiteDisc, transform);
+                if (currentPlayer == Connect4Player.Black)
+                    currentDisc = blackDiscObjectPool.GetPooledObject();
+                else if (currentPlayer == Connect4Player.White)
+                    currentDisc = whiteDiscObjectPool.GetPooledObject();
+
                 currentDiscRow = -1;
                 currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
 
@@ -604,7 +617,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
             if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
             {
-                data[0] = transform.localEulerAngles;
+                data[0] = transform.eulerAngles;
                 PhotonNetwork.RaiseEvent(ROTATE_BOARD, data, raiseEventOptions, sendOptions);
             }
 
@@ -615,7 +628,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
         if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
         {
-            data[0] = transform.localEulerAngles;
+            data[0] = transform.eulerAngles;
             PhotonNetwork.RaiseEvent(ROTATE_BOARD, data, raiseEventOptions, sendOptions);
         }
 
@@ -624,10 +637,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     public IEnumerator ChangeTurn()
     {
-        if (Mathf.Approximately(transform.localEulerAngles.y, Mathf.Abs(180.0f)))
-            currentPlayer = Connect4Player.White;
-        else
+        if (transform.eulerAngles.y <= 0.0f)
             currentPlayer = Connect4Player.Black;
+        else
+            currentPlayer = Connect4Player.White;
         
         yield return new WaitForEndOfFrame();
 
@@ -673,7 +686,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             object[] data = (object[])obj.CustomData;
             
             currentPlayer = (Connect4Player)data[0];
-            currentDisc = Instantiate<GameObject>(currentPlayer == Connect4Player.Black ? blackDisc : whiteDisc, transform);
+            if (currentPlayer == Connect4Player.Black)
+                currentDisc = blackDiscObjectPool.GetPooledObject();
+            else if (currentPlayer == Connect4Player.White)
+                currentDisc = whiteDiscObjectPool.GetPooledObject();
 
             currentDiscRow = -1;
             currentDiscCol = GetColAt(currentDisc.transform.position.x, currentPlayer);
@@ -704,7 +720,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         {
             object[] data = (object[])obj.CustomData;
 
-            transform.localEulerAngles = (Vector3)data[0];
+            transform.eulerAngles = (Vector3)data[0];
         }
         else if (obj.Code == CHANGE_TURN)
         {

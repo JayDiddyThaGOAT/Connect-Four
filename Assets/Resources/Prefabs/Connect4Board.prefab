@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 753056406893256657}
   - component: {fileID: 3285256657036421915}
   - component: {fileID: 2050315296011887745}
+  - component: {fileID: 587514856524252921}
+  - component: {fileID: 3630832843208653455}
   - component: {fileID: 1128017915}
   m_Layer: 0
   m_Name: Connect4Board
@@ -106,6 +108,36 @@ MonoBehaviour:
   aiAutoResetDelay: 2
   isBlackDiscAI: 0
   isWhiteDiscAI: 0
+--- !u!114 &587514856524252921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3933735902690085582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1352160ee5ac9b44851dde22381ed73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objectPrefab: {fileID: 4424143733249988201, guid: 29bb8bede790a8a4daabd29252e8d665, type: 3}
+  objectPoolSize: 21
+  isExpandable: 0
+--- !u!114 &3630832843208653455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3933735902690085582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1352160ee5ac9b44851dde22381ed73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objectPrefab: {fileID: 1142565590734256518, guid: 40b68c73eee1a8249854c26b0a7384f7, type: 3}
+  objectPoolSize: 21
+  isExpandable: 0
 --- !u!120 &1128017915
 LineRenderer:
   m_ObjectHideFlags: 0
