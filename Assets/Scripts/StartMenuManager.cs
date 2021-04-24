@@ -69,7 +69,7 @@ public class StartMenuManager : Singleton<StartMenuManager>
         set{_selectedDiscButton = value;}
     }
 
-    float StartMenuButtonPanelWidth, DiscSelectionPanelWidth;
+    float PanelSlideDistance = 2000.0f;
 
 #pragma warning restore 0649
 
@@ -80,12 +80,6 @@ public class StartMenuManager : Singleton<StartMenuManager>
         networkManager = GetComponent<NetworkManager>();
 
         connect4Board = Connect4Board.Instance;
-        
-        if (SceneManager.GetActiveScene().name == "StartMenu")
-        {
-            StartMenuButtonPanelWidth = StartMenuButtonPanel.GetComponent<RectTransform>().sizeDelta.x;
-            DiscSelectionPanelWidth = DiscSelectionPanel.GetComponent<RectTransform>().sizeDelta.x;
-        }
     }
 
     void SetConnect4BoardAIs(bool blackAI, bool whiteAI)
@@ -101,10 +95,10 @@ public class StartMenuManager : Singleton<StartMenuManager>
         {
             t += Time.deltaTime;
 
-            float StartMenuButtonPanelPositionX = Mathf.Lerp(0, -StartMenuButtonPanelWidth - 140, t / PanelShiftDuration);
+            float StartMenuButtonPanelPositionX = Mathf.Lerp(0, -PanelSlideDistance, t / PanelShiftDuration);
             StartMenuButtonPanel.localPosition = new Vector3(StartMenuButtonPanelPositionX, StartMenuButtonPanel.localPosition.y, StartMenuButtonPanel.localPosition.z);
 
-            float DiscSelectionPanelPositionX = Mathf.Lerp(DiscSelectionPanelWidth, 0, t / PanelShiftDuration);
+            float DiscSelectionPanelPositionX = Mathf.Lerp(PanelSlideDistance, 0, t / PanelShiftDuration);
             DiscSelectionPanel.localPosition = new Vector3(DiscSelectionPanelPositionX, DiscSelectionPanel.localPosition.y, DiscSelectionPanel.localPosition.z);
 
             yield return null;
@@ -134,10 +128,10 @@ public class StartMenuManager : Singleton<StartMenuManager>
         {
             t += Time.deltaTime;
 
-            float StartMenuButtonPanelPositionX = Mathf.Lerp(-StartMenuButtonPanelWidth - 140, 0, t / PanelShiftDuration);
+            float StartMenuButtonPanelPositionX = Mathf.Lerp(-PanelSlideDistance, 0, t / PanelShiftDuration);
             StartMenuButtonPanel.localPosition = new Vector3(StartMenuButtonPanelPositionX, StartMenuButtonPanel.localPosition.y, StartMenuButtonPanel.localPosition.z);
 
-            float DiscSelectionPanelPositionX = Mathf.Lerp(0, DiscSelectionPanelWidth, t / PanelShiftDuration);
+            float DiscSelectionPanelPositionX = Mathf.Lerp(0, PanelSlideDistance, t / PanelShiftDuration);
             DiscSelectionPanel.localPosition = new Vector3(DiscSelectionPanelPositionX, DiscSelectionPanel.localPosition.y, DiscSelectionPanel.localPosition.z);
 
             yield return null;
