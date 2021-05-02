@@ -35,10 +35,19 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     private float aiAutoResetDelay = 2.0f;
 
     [SerializeField]
+    [Range(0, 6)]
+    private int aiBlackMinimaxDepth = 0;
+
+    [SerializeField]
+    [Range(0, 6)]
+    private int aiWhiteMinimaxDepth = 0;
+
+
+    [SerializeField]
     private bool isBlackDiscAI, isWhiteDiscAI;
 #pragma warning restore 0649
 
-    private Connect4Player[,] boardMatrix = new Connect4Player[6, 7];
+    private Connect4Player[,] currentBoardMatrix = new Connect4Player[6, 7];
     private Connect4Player winnerPlayer = Connect4Player.None;
     private LineRenderer winLineRenderer;
     private Vector3 startLinePosition, endLinePosition;
@@ -83,7 +92,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     public Connect4Player WinnerPlayer{
         get{return winnerPlayer;}
     }
-
 
     public override void Awake()
     {
@@ -168,19 +176,43 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         {
             for (int col = 0; col < 7; col++)
             {
-                boardMatrix[row, col] = Connect4Player.None;
+                currentBoardMatrix[row, col] = Connect4Player.None;
             }
         }
-    }
 
+        if (isBlackDiscAI && isWhiteDiscAI)
+        {
+            aiBlackMinimaxDepth = Random.Range(1, 7);
+            aiWhiteMinimaxDepth = Random.Range(1, 7);
+        }
+        else if (isWhiteDiscAI)
+        {
+            int aiDifficiulty = PlayerPrefs.GetInt("Black Disc Score") - PlayerPrefs.GetInt("White Disc Score");
+            if (aiDifficiulty <= 0)
+                aiWhiteMinimaxDepth = 0;
+            else if (aiDifficiulty >= 6)
+                aiWhiteMinimaxDepth = 6;
+            else
+                aiWhiteMinimaxDepth = aiDifficiulty;
+            
+        }
+        else if (isBlackDiscAI)
+        {
+           int aiDifficiulty = PlayerPrefs.GetInt("Black Disc Score") - PlayerPrefs.GetInt("White Disc Score");
+            if (aiDifficiulty <= 0)
+                aiBlackMinimaxDepth = 0;
+            else if (aiDifficiulty >= 6)
+                aiBlackMinimaxDepth = 6;
+            else
+                aiBlackMinimaxDepth = aiDifficiulty;
+        }
+
+    }
     
     void SpawnNextDisc()
     {
         if (!(PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay"))
         {
-            List<int> AvailableMoves = GetAvailableMoves(boardMatrix);
-            int targetColumn = AvailableMoves[Random.Range(0, AvailableMoves.Count)];
-
             if (currentPlayer == Connect4Player.Black)
             {
                 currentDisc = blackDiscObjectPool.GetPooledObject();
@@ -189,6 +221,15 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 {
                     if (inputManager != null)
                         inputManager.enabled = false;
+
+                    int targetColumn;
+                    if (aiBlackMinimaxDepth <= 0)
+                    {
+                        List<int> availableMoves = GetAvailableMoves(currentBoardMatrix);
+                        targetColumn = availableMoves[Random.Range(0, availableMoves.Count)];
+                    }
+                    else
+                        targetColumn = (int)MiniMax(aiBlackMinimaxDepth, -Mathf.Infinity, Mathf.Infinity, currentPlayer, currentBoardMatrix).x;
                     
                     StartCoroutine(RunAITurn(targetColumn));
                 }
@@ -206,8 +247,17 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 {
                     if (inputManager != null)
                         inputManager.enabled = false;
+                    
+                    int targetColumn;
+                    if (aiWhiteMinimaxDepth <= 0) 
+                    {
+                        List<int> availableMoves = GetAvailableMoves(currentBoardMatrix);
+                        targetColumn = availableMoves[Random.Range(0, availableMoves.Count)];
+                    }
+                    else
+                        targetColumn = (int)MiniMax(aiWhiteMinimaxDepth, -Mathf.Infinity, Mathf.Infinity, currentPlayer, currentBoardMatrix).x;
 
-                    StartCoroutine(RunAITurn(6 - targetColumn));
+                    StartCoroutine(RunAITurn(targetColumn));
                 }
                 else
                 {
@@ -263,21 +313,16 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         return ((int)y - 10) / -5;
     }
 
-    public int GetRowAvailableAt(int col)
+    public int GetRowAvailableAt(int col, Connect4Player[,] board)
     {
-        if (boardMatrix[0, col] != 0)
+        if (board[0, col] != 0)
             return -1;
 
         int targetRow = 5;
-        while (boardMatrix[targetRow, col] != 0 && targetRow > 0)
+        while (board[targetRow, col] != 0 && targetRow > 0)
             targetRow--;
         
         return targetRow;
-    }
-
-    public Connect4Player[,] GetGameBoardMatrix()
-    {
-        return boardMatrix;
     }
 
     public List<int> GetAvailableMoves(Connect4Player[,] board)
@@ -298,7 +343,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         board[row, col] = player;
     }
 
-    public bool IsWinner(Connect4Player player, int row, int col, Connect4Player[,] board)
+    public bool IsWinnerAt(Connect4Player player, int row, int col, Connect4Player[,] board)
     {
         if (player == Connect4Player.None)
             return false;
@@ -320,7 +365,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             if (board[row, col] == player && board[row, col + 1] == player &&
                 board[row, col + 2] == player && board[row, col + 3] == player)
             {
-                if (board == boardMatrix)
+                if (board == currentBoardMatrix)
                 {
                     startLinePosition = new Vector3(GetXAt(col, player), GetYAt(row), -1.0f);
                     endLinePosition = new Vector3(GetXAt(col + 3, player), GetYAt(row), -1.0f);
@@ -343,7 +388,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             if (board[row, col] == player && board[row + 1, col] == player &&
                 board[row + 2, col] == player && board[row + 3, col] == player)
             {
-                if (board == boardMatrix)
+                if (board == currentBoardMatrix)
                 {
                     startLinePosition = new Vector3(GetXAt(col, player), GetYAt(row), -1.0f);
                     endLinePosition = new Vector3(GetXAt(col, player), GetYAt(row + 3), -1.0f);
@@ -368,7 +413,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 if (board[row, col] == player && board[row + 1, col - 1] == player &&
                     board[row + 2, col - 2] == player && board[row + 3, col - 3] == player)
                 {
-                    if (board == boardMatrix)
+                    if (board == currentBoardMatrix)
                     {
                         startLinePosition = new Vector3(GetXAt(col, player), GetYAt(row), -1.0f);
                         endLinePosition = new Vector3(GetXAt(col - 3, player), GetYAt(row + 3), -1.0f);
@@ -383,7 +428,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 if (board[row, col] == player && board[row - 1, col - 1] == player &&
                     board[row - 2, col - 2] == player && board[row - 3, col - 3] == player)
                 {
-                    if (board == boardMatrix)
+                    if (board == currentBoardMatrix)
                     {
                         startLinePosition = new Vector3(GetXAt(col, player), GetYAt(row), -1.0f);
                         endLinePosition = new Vector3(GetXAt(col - 3, player), GetYAt(row - 3), -1.0f);
@@ -395,6 +440,230 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         }
 
         return false;
+    }
+
+    private int CountDiscsInARow(int n, Connect4Player player, Connect4Player[,] board)
+    {
+        Debug.Assert(n == 2 || n == 3 || n == 4);
+
+        int count = 0;
+        
+        //Check entire board horizontally
+        for (int row = 0; row <= 5; row++)
+        {
+            for (int col = 0; col <= 3; col++)
+            {
+                if (n == 4)
+                {
+                    if (board[row, col] == player && board[row, col + 1] == player && 
+                        board[row, col + 2] == player && board[row, col + 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 3)
+                {
+                    if (board[row, col] == player && board[row, col + 1] == player && 
+                        board[row, col + 2] == player && board[row, col + 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row, col + 1] == player && 
+                        board[row, col + 2] == player && board[row, col + 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 2)
+                {
+                    if (board[row, col] == player && board[row, col + 1] == player && 
+                        board[row, col + 2] == Connect4Player.None && board[row, col + 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row, col + 1] == player && 
+                        board[row, col + 2] == player && board[row, col + 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row, col + 1] == Connect4Player.None && 
+                        board[row, col + 2] == player && board[row, col + 3] == player)
+                    {
+                        count++;
+                    }
+                }
+            }
+        }
+
+        //Check entire board vertically
+        for (int col = 0; col <= 6; col++)
+        {
+            for (int row = 0; row <= 2; row++)
+            {
+                if (n == 4)
+                {
+                    if (board[row, col] == player && board[row + 1, col] == player && 
+                        board[row + 2, col] == player && board[row + 3, col] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 3)
+                {
+                    if (board[row, col] == player && board[row + 1, col] == player && 
+                        board[row + 2, col] == player && board[row + 3, col] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row + 1, col] == player && 
+                        board[row + 2, col] == player && board[row + 3, col] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 2)
+                {
+                    if (board[row, col] == player && board[row + 1, col] == player && 
+                        board[row + 2, col] == Connect4Player.None && board[row + 3, col] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row + 1, col] == player && 
+                        board[row + 2, col] == player && board[row + 3, col] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == player && board[row + 1, col] == player && 
+                        board[row + 2, col] == Connect4Player.None && board[row + 3, col] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                }
+            }
+        }
+
+        //Check entire board both sides diagonally
+        for (int col = 3; col < 7; col++)
+        {
+            for (int row = 0; row < 3; row++)
+            {
+                if (n == 4)
+                {
+                    if (board[row, col] == player && board[row + 1, col - 1] == player && 
+                        board[row + 2, col - 2] == player && board[row + 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 3)
+                {
+                    if (board[row, col] == player && board[row + 1, col - 1] == player && 
+                        board[row + 2, col - 2] == player && board[row + 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row + 1, col - 1] == player && 
+                        board[row + 2, col - 2] == player && board[row + 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 2)
+                {
+                    if (board[row, col] == player && board[row + 1, col - 1] == player && 
+                        board[row + 2, col - 2] == Connect4Player.None && board[row + 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row + 1, col - 1] == player && 
+                        board[row + 2, col - 2] == player && board[row + 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row + 1, col - 1] == Connect4Player.None && 
+                        board[row + 2, col - 2] == player && board[row + 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            for (int row = 3; row < 6; row++)
+            {
+                if (n == 4)
+                {
+                    if (board[row, col] == player && board[row - 1, col - 1] == player && 
+                        board[row - 2, col - 2] == player && board[row - 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 3)
+                {
+                    if (board[row, col] == player && board[row - 1, col - 1] == player && 
+                        board[row - 2, col - 2] == player && board[row - 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row - 1, col - 1] == player && 
+                        board[row - 2, col - 2] == player && board[row - 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+                else if (n == 2)
+                {
+                    if (board[row, col] == player && board[row - 1, col - 1] == player && 
+                        board[row - 2, col - 2] == Connect4Player.None && board[row - 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row - 1, col - 1] == player && 
+                        board[row - 2, col - 2] == player && board[row - 3, col - 3] == Connect4Player.None)
+                    {
+                        count++;
+                    }
+                    
+                    if (board[row, col] == Connect4Player.None && board[row - 1, col - 1] == Connect4Player.None && 
+                        board[row - 2, col - 2] == player && board[row - 3, col - 3] == player)
+                    {
+                        count++;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
+    public bool IsTie(Connect4Player [,] board)
+    {
+        for (int row = 0; row < 6; row++)
+        {
+            for (int col = 0; col < 7; col++)
+            {
+                if (board[row, col] == Connect4Player.None)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    public Connect4Player GetWinner()
+    {
+        return winnerPlayer;
     }
 
     public void SetWinner(Connect4Player player)
@@ -411,8 +680,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         if (inputManager != null)
             inputManager.enabled = false;
 
-        if (gameManager != null)
+        if (gameManager != null && !(isBlackDiscAI && isWhiteDiscAI))
+        {
             gameManager.SetResetButtonActive(true);
+        }
 
         winnerPlayer = player;
         winLineRenderer.enabled = true;
@@ -438,24 +709,102 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         }
     }
 
-    public bool IsTie()
+    private float EvaluateBoard(Connect4Player player, Connect4Player [,] board)
     {
-        for (int row = 0; row < 6; row++)
+        Connect4Player opponent = player == Connect4Player.Black ? Connect4Player.White : Connect4Player.Black;
+        
+        int playerFourInARows = CountDiscsInARow(4, player, board);
+        int playerThreeInARows = CountDiscsInARow(3, player, board);
+        int playerTwoInARows = CountDiscsInARow(2, player, board);
+        
+        int opponentFourInARows = CountDiscsInARow(4, opponent, board);
+        int opponentThreeInARows = CountDiscsInARow(3, opponent, board);
+        int opponentTwoInARows = CountDiscsInARow(2, opponent, board);
+
+        int randomCol = Random.Range(0, 7);
+
+        int playerCountInRandomCol = 0;
+        int opponentCountInRandomCol = 0;
+
+        for (int row = 0; row <= 5; row++)
         {
-            for (int col = 0; col < 7; col++)
-            {
-                if (boardMatrix[row, col] == Connect4Player.None)
-                    return false;
-            }
+            if (board[row, randomCol] == player)
+                playerCountInRandomCol++;
+            else if (board[row, randomCol] == opponent)
+                opponentCountInRandomCol++;
         }
 
-        return true;
+        float playerScore = playerFourInARows * 100000 + playerThreeInARows * 100 + playerTwoInARows * 10 + playerCountInRandomCol * 5;
+        float opponentScore = opponentFourInARows * 100000 + opponentThreeInARows * 100 + opponentTwoInARows * 10 + opponentCountInRandomCol * 5;
+
+        if (currentPlayer == Connect4Player.Black && aiBlackMinimaxDepth % 2 == 1 || 
+            currentPlayer == Connect4Player.White && aiWhiteMinimaxDepth % 2 == 1)
+            return opponentScore - playerScore;
+        else
+            return playerScore - opponentScore;
     }
 
-    public Connect4Player GetWinner()
+    private Vector2 MiniMax(int depth, float alpha, float beta, Connect4Player player, Connect4Player[,] board)
     {
-        return winnerPlayer;
+        Connect4Player opponent = player == Connect4Player.Black ? Connect4Player.White : Connect4Player.Black;
+
+       if (depth == 0 || IsTie(board))
+            return new Vector2(-1, EvaluateBoard(player, board));
+
+        int targetColumn = -1;
+
+        if (player == currentPlayer)
+        {
+            float value = -Mathf.Infinity;
+
+            foreach (int col in GetAvailableMoves(board))
+            {
+                int row = GetRowAvailableAt(col, board);
+
+                Connect4Player [,] tempBoard = (Connect4Player[,])board.Clone();
+                PlaceDiscOn(player, row, col, tempBoard);
+
+                float newValue = MiniMax(depth - 1, alpha, beta, opponent, tempBoard).y;
+                if (newValue > value)
+                {
+                    value = newValue;
+                    targetColumn = col;
+                }
+
+                alpha = Mathf.Max(alpha, value);
+                if (alpha >= beta)
+                    break;
+            }
+
+            return new Vector3(targetColumn, value);
+        }
+        else
+        {
+            float value = Mathf.Infinity;
+
+            foreach (int col in GetAvailableMoves(board))
+            {
+                int row = GetRowAvailableAt(col, board);
+
+                Connect4Player [,] tempBoard = (Connect4Player[,])board.Clone();
+                PlaceDiscOn(player, row, col, tempBoard);
+
+                float newValue = MiniMax(depth - 1, alpha, beta, opponent, tempBoard).y;
+                if (newValue < value)
+                {
+                    value = newValue;
+                    targetColumn = col;
+                }
+
+                beta = Mathf.Min(beta, value);
+                if (alpha >= beta)
+                    break;
+            }
+
+            return new Vector3(targetColumn, value);
+        }
     }
+    
     IEnumerator ShiftToColumn(int targetCol)
     {
         float targetX = GetXAt(targetCol, currentPlayer);
@@ -505,7 +854,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
     IEnumerator DropDiscInBoard()
     {
-        int targetRow = GetRowAvailableAt(currentDiscCol);
+        int targetRow = GetRowAvailableAt(currentDiscCol, currentBoardMatrix);
         if (targetRow >= 0)
         {
             if (swipeDetection != null)
@@ -538,7 +887,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
             currentDisc.transform.position = new Vector3(currentDisc.transform.position.x, targetY, currentDisc.transform.position.z);
             currentDiscRow = targetRow;
-            PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix());
+            PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, currentBoardMatrix);
 
             if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
             {
@@ -550,21 +899,18 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 PhotonNetwork.RaiseEvent(DROP_DISC, data, raiseEventOptions, sendOptions);
             }
 
-            if (IsWinner(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix()))
+            if (IsWinnerAt(currentPlayer, currentDiscRow, currentDiscCol, currentBoardMatrix))
             {
                 SetWinner(currentPlayer);
 
-                if (inputManager == null)
-                {
-                    if (isBlackDiscAI && isWhiteDiscAI)
-                        yield return StartCoroutine("AutoReset");
-                    else
-                        yield return 0;
-                }
+                if (isBlackDiscAI && isWhiteDiscAI)
+                    yield return StartCoroutine("AutoReset");
+                else
+                    yield return 0;
             }
             else
             {
-                if (IsTie())
+                if (IsTie(currentBoardMatrix))
                 {
                     currentDisc = null;
 
@@ -580,13 +926,11 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
                     if (inputManager != null)
                         inputManager.enabled = false;
+                    
+                    if (isBlackDiscAI && isWhiteDiscAI)
+                        yield return StartCoroutine("AutoReset");
                     else
-                    {
-                        if (isBlackDiscAI && isWhiteDiscAI)
-                            yield return StartCoroutine("AutoReset");
-                        else
-                            yield return 0;
-                    }
+                        yield return 0;
 
                     if (gameManager != null)
                         gameManager.SetResetButtonActive(true);
@@ -664,12 +1008,10 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
     {
         yield return new WaitForSeconds(aiMoveDelay);
 
-        if (currentPlayer == Connect4Player.Black)
-            yield return StartCoroutine(ShiftToColumn(targetCol));
-        else if (currentPlayer == Connect4Player.White)
-            yield return StartCoroutine(ShiftToColumn(6 - targetCol));
+        yield return StartCoroutine(ShiftToColumn(targetCol));
 
         yield return new WaitForSeconds(aiMoveDelay);
+
         yield return StartCoroutine("DropDisc");
     }
 
@@ -713,7 +1055,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 currentDiscRow = (int)data[2];
                 currentDiscCol = (int)data[3];
 
-                PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, GetGameBoardMatrix());
+                PlaceDiscOn(currentPlayer, currentDiscRow, currentDiscCol, currentBoardMatrix);
             }
         }
         else if (obj.Code == ROTATE_BOARD)

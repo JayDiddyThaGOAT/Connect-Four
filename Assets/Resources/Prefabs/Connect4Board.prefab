@@ -98,14 +98,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de7f10879a9dcda47a26a5df56b67701, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blackDisc: {fileID: 4424143733249988201, guid: 29bb8bede790a8a4daabd29252e8d665, type: 3}
-  whiteDisc: {fileID: 1142565590734256518, guid: 40b68c73eee1a8249854c26b0a7384f7, type: 3}
-  currentPlayer: 1
   rotateDuration: 0.25
+  currentPlayer: 1
   discShiftDuration: 0.0625
   discDropDuration: 0.15
   aiMoveDelay: 0.25
   aiAutoResetDelay: 2
+  aiBlackMinimaxDepth: 1
+  aiWhiteMinimaxDepth: 1
   isBlackDiscAI: 0
   isWhiteDiscAI: 0
 --- !u!114 &587514856524252921
