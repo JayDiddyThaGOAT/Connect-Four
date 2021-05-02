@@ -127,6 +127,20 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
                 inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
             }
+            else
+            {
+                if (scoreManager != null)
+                {
+                    scoreManager.SetBlackDiscScore(0);
+                    scoreManager.SetWhiteDiscScore(0);
+                }
+
+                if (!(isBlackDiscAI && isWhiteDiscAI))
+                {
+                    aiBlackMinimaxDepth = 0;
+                    aiWhiteMinimaxDepth = 0;
+                }
+            }
         }   
         else if (scene.name == "StartMenu")
         {
@@ -140,7 +154,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             isBlackDiscAI = true;
             isWhiteDiscAI = true;
         }
-
         ResetBoard();
         SpawnNextDisc();
     }
@@ -185,28 +198,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             aiBlackMinimaxDepth = Random.Range(1, 7);
             aiWhiteMinimaxDepth = Random.Range(1, 7);
         }
-        else if (isWhiteDiscAI)
-        {
-            int aiDifficiulty = PlayerPrefs.GetInt("Black Disc Score") - PlayerPrefs.GetInt("White Disc Score");
-            if (aiDifficiulty <= 0)
-                aiWhiteMinimaxDepth = 0;
-            else if (aiDifficiulty >= 6)
-                aiWhiteMinimaxDepth = 6;
-            else
-                aiWhiteMinimaxDepth = aiDifficiulty;
-            
-        }
-        else if (isBlackDiscAI)
-        {
-           int aiDifficiulty = PlayerPrefs.GetInt("Black Disc Score") - PlayerPrefs.GetInt("White Disc Score");
-            if (aiDifficiulty <= 0)
-                aiBlackMinimaxDepth = 0;
-            else if (aiDifficiulty >= 6)
-                aiBlackMinimaxDepth = 6;
-            else
-                aiBlackMinimaxDepth = aiDifficiulty;
-        }
-
     }
     
     void SpawnNextDisc()
@@ -695,9 +686,29 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         if (scoreManager != null)
         {
             if (winnerPlayer == Connect4Player.Black)
+            {
                 scoreManager.SetBlackDiscScore(PlayerPrefs.GetInt("Black Disc Score") + 1);
+
+                if (isWhiteDiscAI)
+                {
+                    if (PlayerPrefs.GetInt("Black Disc Score") % 2 == 1 && aiWhiteMinimaxDepth < 6)
+                    {
+                        aiWhiteMinimaxDepth++;
+                    }
+                }
+            }
             else if (winnerPlayer == Connect4Player.White)
+            {
                 scoreManager.SetWhiteDiscScore(PlayerPrefs.GetInt("White Disc Score") + 1);
+
+                if (isBlackDiscAI)
+                {
+                    if (PlayerPrefs.GetInt("White Disc Score") % 2 == 1 && aiBlackMinimaxDepth < 6)
+                    {
+                        aiBlackMinimaxDepth++;
+                    }
+                }
+            }
         }
 
         if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
