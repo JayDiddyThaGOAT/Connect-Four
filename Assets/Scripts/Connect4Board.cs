@@ -124,8 +124,14 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
                 PhotonNetwork.NetworkingClient.EventReceived += OnEventReceived;
 
+                Connect4Player localPlayer = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"];
+                if (localPlayer == Connect4Player.Black)
+                    swipeDetection.SetTrailColor(Color.black);
+                else if (localPlayer == Connect4Player.White)
+                    swipeDetection.SetTrailColor(Color.white);
+
                 PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
-                inputManager.enabled = (Connect4Player)PhotonNetwork.LocalPlayer.CustomProperties["Disc Color"] == currentPlayer;
+                inputManager.enabled = localPlayer == currentPlayer;
             }
             else
             {
@@ -154,6 +160,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
             isBlackDiscAI = true;
             isWhiteDiscAI = true;
         }
+        
         ResetBoard();
         SpawnNextDisc();
     }
@@ -228,6 +235,9 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 {
                     if (inputManager != null)
                         inputManager.enabled = true;
+
+                    if (swipeDetection != null)
+                        swipeDetection.SetTrailColor(Color.black);
                 }
             }
             else if (currentPlayer == Connect4Player.White)
@@ -254,6 +264,9 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 {
                     if (inputManager != null)
                         inputManager.enabled = true;
+
+                    if (swipeDetection != null)
+                        swipeDetection.SetTrailColor(Color.white);
                 }
             }
 

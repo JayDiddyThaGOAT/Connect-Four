@@ -114,4 +114,11 @@ public class SwipeDetection : Singleton<SwipeDetection>
             SwipeDirection(direction2D);
         }
     }
+
+    public void SetTrailColor(Color color)
+    {
+        TrailRenderer trailRenderer = trail.GetComponent<TrailRenderer>();
+        trailRenderer.startColor = color;
+        trailRenderer.endColor = color;
+    }
 }

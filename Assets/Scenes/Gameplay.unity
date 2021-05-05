@@ -206,11 +206,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2050315296011887745, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
       propertyPath: isWhiteDiscAI
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2050315296011887745, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
       propertyPath: isBlackDiscAI
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2050315296011887745, guid: 4d38e8c5b162bc542bc2f357ab21e8ef, type: 3}
       propertyPath: aiMiniMaxDepth
@@ -610,7 +610,7 @@ TrailRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e1722452436b0f5409578cd25565f283, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -661,8 +661,8 @@ TrailRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 1, g: 1, b: 1, a: 1}
-      key1: {r: 1, g: 1, b: 1, a: 1}
+      key0: {r: 0, g: 0, b: 0, a: 1}
+      key1: {r: 0, g: 0, b: 0, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
