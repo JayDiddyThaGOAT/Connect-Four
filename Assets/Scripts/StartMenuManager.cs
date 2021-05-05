@@ -21,13 +21,10 @@ public class StartMenuManager : Singleton<StartMenuManager>
     private RectTransform DiscSelectionPanel;
 
      [SerializeField]
-    private Button QuickGameButton;
+    private Button OnlineGameButton;
 
     [SerializeField]
-    private Button MatchmakingButton;
-
-    [SerializeField]
-    private Button SinglePlayerButton;
+    private Button LocalGameButton;
 
     [SerializeField]
     private Button BlackDiscButton;
@@ -46,6 +43,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     [SerializeField]
     private Image WhiteDiscPointer;
+
+    [SerializeField]
+    private TMP_InputField usernameInputField;
 
     [SerializeField]
     private TMP_Text BlackDiscPlayerName;
@@ -80,6 +80,13 @@ public class StartMenuManager : Singleton<StartMenuManager>
         networkManager = GetComponent<NetworkManager>();
 
         connect4Board = Connect4Board.Instance;
+
+        PlayerPrefs.DeleteAll(); //REMOVE Before Publishing To itch.io
+
+        if (PlayerPrefs.HasKey("Username"))
+            usernameInputField.text = PlayerPrefs.GetString("Username");
+        else
+            SetOnlineGameButtonInteractable(false);
     }
 
     void SetConnect4BoardAIs(bool blackAI, bool whiteAI)
@@ -137,8 +144,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
             yield return null;
         }
         
-        SetQuickGameButtonInteractable(true);
-        SetSinglePlayerButtonInteractable(true);
+        SetUserNameInputFieldInteractable(true);
+        SetOnlineGameButtonInteractable(true);
+        SetLocalGameButtonInteractable(true);
 
     }
 
@@ -158,7 +166,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
             return;
 
         Button discButton = discColor == (int)Connect4Player.Black ? BlackDiscButton : WhiteDiscButton;
-        discButton.interactable = interactable;
+
+        if (discButton != null)
+            discButton.interactable = interactable;
     }
     
     public void SetPlayButtonInteractable(bool interactable)
@@ -166,19 +176,25 @@ public class StartMenuManager : Singleton<StartMenuManager>
         PlayButton.interactable = interactable;
     }
 
-     public void SetQuickGameButtonInteractable(bool interactable)
+    public void SetOnlineGameButtonInteractable(bool interactable)
     {
-        QuickGameButton.interactable = interactable;
+        OnlineGameButton.interactable = interactable;
     }
 
-     public void SetMatchmakingButtonInteractable(bool interactable)
+    public void SetLocalGameButtonInteractable(bool interactable)
     {
-        MatchmakingButton.interactable = interactable;
+        LocalGameButton.interactable = interactable;
     }
 
-     public void SetSinglePlayerButtonInteractable(bool interactable)
+    public void SetUserNameInputFieldInteractable(bool interactable)
     {
-        SinglePlayerButton.interactable = interactable;
+        usernameInputField.interactable = interactable;
+    }
+
+    public void SetUsername(string input)
+    {
+        SetOnlineGameButtonInteractable(input.Length > 0);
+        PlayerPrefs.SetString("Username", input);
     }
 
     [PunRPC]
@@ -272,7 +288,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
             return;
 
         TMP_Text playerName = discColor == (int)Connect4Player.Black ? BlackDiscPlayerName : WhiteDiscPlayerName;
-        playerName.enabled = visible;
+
+        if (playerName != null)
+            playerName.enabled = visible;
     }
 
     public void PlayGame()

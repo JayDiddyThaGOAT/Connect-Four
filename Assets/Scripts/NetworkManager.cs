@@ -45,8 +45,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         if (startMenuManager != null)
         {
-            startMenuManager.SetQuickGameButtonInteractable(false);
-            startMenuManager.SetSinglePlayerButtonInteractable(false);
+            startMenuManager.SetUserNameInputFieldInteractable(false);
+            startMenuManager.SetOnlineGameButtonInteractable(false);
+            startMenuManager.SetLocalGameButtonInteractable(false);
         }
 
         if (PhotonNetwork.IsConnected)
@@ -77,11 +78,17 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Player {PhotonNetwork.LocalPlayer.ActorNumber} joined the room");
 
-        if (PhotonNetwork.CurrentRoom.PlayerCount <= 1)
-            PhotonNetwork.LocalPlayer.NickName = "Player 1";
+        if (PlayerPrefs.HasKey("Username"))
+            PhotonNetwork.LocalPlayer.NickName = PlayerPrefs.GetString("Username");
         else
-            PhotonNetwork.LocalPlayer.NickName = "Player 2";
+        {
+            if (PhotonNetwork.CurrentRoom.PlayerCount <= 1)
+                PhotonNetwork.LocalPlayer.NickName = "Player 1";
+            else
+                PhotonNetwork.LocalPlayer.NickName = "Player 2";
+        }
         
+
         PrepareDiscChoices();
 
         if (startMenuManager != null)
