@@ -1,10 +1,16 @@
 # Connect-Four
-
 This is a 3D clone of the two-player connection board game, Connect Four, created in the Unity Engine scripted in C#. The key features this game has to offer is online multiplayer and an AI that gets progressively harder each time you beat it.
 
 The players choose a color and then take turns dropping colored discs into a seven-column, six-row vertically suspended grid. The pieces fall straight down, occupying the lowest available space within the column. The objective of the game is to be the first to form a horizontal, vertical, or diagonal line of four of one's own discs. The first player can always win by playing the right moves.
 
 For optimization purposes, this game was designed under an event-driven architecture where no code is run in an Update() function. So instead, only coroutines and C# delegates are used for example for input detection and moving the objects around.
+
+## Demonstrations
+### Online Game
+![](https://thumbs.gfycat.com/DismalShockingHornedtoad-max-1mb.gif)
+
+### Single Player Mode w/ AI
+![](https://thumbs.gfycat.com/MilkyFlimsyKitten-max-1mb.gif)
 
 ## Installation
 1. Download & extract the ZIP file
