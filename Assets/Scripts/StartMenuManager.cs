@@ -75,14 +75,21 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     private Connect4Board connect4Board;
 
+    void Awake()
+    {
+        if (Application.isEditor)
+            PlayerPrefs.DeleteAll();
+    }
+
     void Start()
     {
         networkManager = GetComponent<NetworkManager>();
 
         connect4Board = Connect4Board.Instance;
+    }
 
-        PlayerPrefs.DeleteAll(); //REMOVE Before Publishing To itch.io
-
+    void OnEnable()
+    {
         if (PlayerPrefs.HasKey("Username"))
             usernameInputField.text = PlayerPrefs.GetString("Username");
         else
