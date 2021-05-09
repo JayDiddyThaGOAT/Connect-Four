@@ -104,6 +104,15 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     private IEnumerator LoadDiscSelectionPanel()
     {
+        if (!PhotonNetwork.IsConnected)
+        {
+            AudioSource localGameButtonAudioSource = LocalGameButton.GetComponent<AudioSource>();
+            localGameButtonAudioSource.Play();
+
+            while (localGameButtonAudioSource.isPlaying)
+                yield return null;
+        }
+
         float t = 0;
         while (t <= PanelShiftDuration)
         {
@@ -137,6 +146,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
                 yield return null;
         }
 
+        AudioSource backButtonAudioSource = BackButton.GetComponent<AudioSource>();
+        backButtonAudioSource.Play();
+
         float t = 0;
         while (t <= PanelShiftDuration)
         {
@@ -150,11 +162,35 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
             yield return null;
         }
+
+        BlackDiscButton.interactable = true;
+        WhiteDiscButton.interactable = true;
+        SetInstructionsText("Tap A Disc");
         
         SetUserNameInputFieldInteractable(true);
         SetOnlineGameButtonInteractable(true);
         SetLocalGameButtonInteractable(true);
 
+    }
+
+    private IEnumerator LoadGameplayScene()
+    {
+        AudioSource playGameAudioSource = PlayButton.GetComponent<AudioSource>();
+        playGameAudioSource.Play();
+
+        while (playGameAudioSource.isPlaying)
+            yield return null;
+
+        if (PhotonNetwork.IsConnected)
+        {
+            PhotonNetwork.CurrentRoom.IsOpen = false;
+            PhotonNetwork.LoadLevel("Gameplay");
+        }
+        else
+        {
+            SetConnect4BoardAIs(!BlackDiscPointer.enabled, !WhiteDiscPointer.enabled);
+            SceneManager.LoadScene("Gameplay");
+        }
     }
 
     public void GoToDiscSelectionPanel()
@@ -188,6 +224,12 @@ public class StartMenuManager : Singleton<StartMenuManager>
         OnlineGameButton.interactable = interactable;
     }
 
+    public void PlayOnlineGameButtonSound()
+    {
+        AudioSource onlineGameButtonAudioSource = OnlineGameButton.GetComponent<AudioSource>();
+        onlineGameButtonAudioSource.Play();
+    }
+
     public void SetLocalGameButtonInteractable(bool interactable)
     {
         LocalGameButton.interactable = interactable;
@@ -200,6 +242,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     public void SetUsername(string input)
     {
+        AudioSource inputFieldAudioSource = usernameInputField.GetComponent<AudioSource>();
+        inputFieldAudioSource.Play();
+
         SetOnlineGameButtonInteractable(input.Length > 0);
         PlayerPrefs.SetString("Username", input);
     }
@@ -211,6 +256,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
             return;
 
         SelectedDiscButton = discColor == (int)Connect4Player.Black ? BlackDiscButton : WhiteDiscButton;
+
+        AudioSource discButtonAudioSource = SelectedDiscButton.GetComponent<AudioSource>();
+        discButtonAudioSource.Play();
     }
 
     [PunRPC]
@@ -242,19 +290,16 @@ public class StartMenuManager : Singleton<StartMenuManager>
     [PunRPC]
     public void PlayGameRPC()
     {
-        PhotonNetwork.CurrentRoom.IsOpen = false;
-        PhotonNetwork.LoadLevel("Gameplay");
+        StartCoroutine("LoadGameplayScene");
     }
 
     public void SelectDisc(int discColor)
     {
-        if (discColor == (int)Connect4Player.None)
-            return;
+        Debug.Assert(discColor != (int)Connect4Player.None);
 
         TMP_Text playerName = discColor == (int)Connect4Player.Black ? BlackDiscPlayerName : WhiteDiscPlayerName;
 
         Button otherDiscButton = discColor == (int)Connect4Player.Black ? WhiteDiscButton : BlackDiscButton;
-
 
         if (PhotonNetwork.IsConnected)
         {
@@ -279,6 +324,13 @@ public class StartMenuManager : Singleton<StartMenuManager>
         }
         else
         {
+            AudioSource discButtonAudioSource;
+            if (discColor == (int)Connect4Player.Black)
+                discButtonAudioSource = BlackDiscButton.GetComponent<AudioSource>();
+            else
+                discButtonAudioSource = WhiteDiscButton.GetComponent<AudioSource>();
+            discButtonAudioSource.Play();
+
             Image discPointer = discColor == (int)Connect4Player.Black ? BlackDiscPointer : WhiteDiscPointer;
             discPointer.enabled ^= true;
 
@@ -304,8 +356,7 @@ public class StartMenuManager : Singleton<StartMenuManager>
     {
         if (!PhotonNetwork.IsConnected)
         {
-            SetConnect4BoardAIs(!BlackDiscPointer.enabled, !WhiteDiscPointer.enabled);
-            SceneManager.LoadScene("Gameplay");
+            StartCoroutine("LoadGameplayScene");
         }
         else
         {
@@ -317,6 +368,11 @@ public class StartMenuManager : Singleton<StartMenuManager>
             
             if (opponentPlayer.CustomProperties.ContainsKey(READY_TO_PLAY) && (bool)opponentPlayer.CustomProperties[READY_TO_PLAY])
                networkManager.photonView.RPC("PlayGameRPC", RpcTarget.All);
+            else
+            {
+                AudioSource playGameAudioSource = PlayButton.GetComponent<AudioSource>();
+            playGameAudioSource.Play();
+            }
         }
     }
 }

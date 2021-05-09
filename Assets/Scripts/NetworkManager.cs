@@ -48,6 +48,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
             startMenuManager.SetUserNameInputFieldInteractable(false);
             startMenuManager.SetOnlineGameButtonInteractable(false);
             startMenuManager.SetLocalGameButtonInteractable(false);
+            
+            startMenuManager.PlayOnlineGameButtonSound();
         }
 
         if (PhotonNetwork.IsConnected)
