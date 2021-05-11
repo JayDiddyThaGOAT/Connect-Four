@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+using TMPro;
+
 using Photon.Pun;
 using Photon.Realtime;
 
@@ -19,12 +21,22 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     private Connect4Board connect4Board;
 
+    private TMP_Text LoadingUpdateText;
+
+    [SerializeField]
+    private GameObject LoadingPanel;
+
     void Start()
     {
         PhotonNetwork.KeepAliveInBackground = 30;
 
         if (SceneManager.GetActiveScene().name == "StartMenu")
+        {
             startMenuManager = StartMenuManager.Instance;
+
+            if (LoadingPanel != null)
+                LoadingUpdateText = LoadingPanel.GetComponentInChildren<TMP_Text>();
+        }
     }
 
     void OnApplicationQuit()
@@ -55,43 +67,47 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsConnected)
         {
             Debug.Log($"Connected to server. Looking for random room");
+            LoadingUpdateText.text = "Looking for a room...";
+
             PhotonNetwork.JoinRandomRoom(null, MAX_PLAYERS);
         }
         else
         {
             PhotonNetwork.ConnectUsingSettings();
+            LoadingUpdateText.text = "Connecting to server...";
         }
+
+        LoadingPanel.SetActive(true);
     }
 
     #region Photon Callbacks
     public override void OnConnectedToMaster()
     {
         Debug.Log($"Connected to server. Looking for random room");
+        LoadingUpdateText.text = "Looking for a room...";
+
         PhotonNetwork.JoinRandomRoom(null, MAX_PLAYERS);
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
     {
         Debug.Log($"Joining random room failed b/c {message}. Creating new room");
+        LoadingUpdateText.text = "Creating new room...";
+
         PhotonNetwork.CreateRoom(null, new RoomOptions{ MaxPlayers = MAX_PLAYERS });
     }
 
     public override void OnJoinedRoom()
     {
         Debug.Log($"Player {PhotonNetwork.LocalPlayer.ActorNumber} joined the room");
+        LoadingUpdateText.text = string.Empty;
 
         if (PlayerPrefs.HasKey("Username"))
             PhotonNetwork.LocalPlayer.NickName = PlayerPrefs.GetString("Username");
-        else
-        {
-            if (PhotonNetwork.CurrentRoom.PlayerCount <= 1)
-                PhotonNetwork.LocalPlayer.NickName = "Player 1";
-            else
-                PhotonNetwork.LocalPlayer.NickName = "Player 2";
-        }
         
 
         PrepareDiscChoices();
+        LoadingPanel.SetActive(false);
 
         if (startMenuManager != null)
             startMenuManager.GoToDiscSelectionPanel();
@@ -100,6 +116,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
         Debug.Log($"Player {newPlayer.ActorNumber} entered the room");
+        
     }
 
     public override void OnPlayerLeftRoom(Player otherPlayer)
@@ -214,8 +231,6 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         {
             if (newMasterClient.CustomProperties.ContainsKey(DISC_COLOR))
             {
-                newMasterClient.NickName = "Player 1";
-
                 Connect4Player newMasterClientColor = (Connect4Player)newMasterClient.CustomProperties[DISC_COLOR];
                 startMenuManager.SetPlayerName((int)newMasterClientColor, newMasterClient.NickName);
             }
