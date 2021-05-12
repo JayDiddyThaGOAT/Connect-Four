@@ -73,33 +73,37 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
 #pragma warning restore 0649
 
-    private Connect4Board connect4Board;
-
     void Awake()
     {
         if (Application.isEditor)
             PlayerPrefs.DeleteAll();
-    }
 
-    void Start()
-    {
         networkManager = GetComponent<NetworkManager>();
-
-        connect4Board = Connect4Board.Instance;
     }
 
     void OnEnable()
     {
         if (PlayerPrefs.HasKey("Username"))
+        {
+            AudioSource inputFieldAudioSource = usernameInputField.GetComponent<AudioSource>();
+            inputFieldAudioSource.volume = 0.0f;
+
             usernameInputField.text = PlayerPrefs.GetString("Username");
+            usernameInputField.textComponent.text = string.Empty;
+
+            SetOnlineGameButtonInteractable(usernameInputField.text.Length > 0);
+        }
         else
             SetOnlineGameButtonInteractable(false);
+        
+        usernameInputField.onValueChanged.AddListener((username) => SetUsername(username));
     }
 
     void SetConnect4BoardAIs(bool blackAI, bool whiteAI)
     {
-        connect4Board.SetBlackDiscAI(blackAI);
-        connect4Board.SetWhiteDiscAI(whiteAI);
+        Connect4Board board = Connect4Board.Instance;
+        board.SetBlackDiscAI(blackAI);
+        board.SetWhiteDiscAI(whiteAI);
     }
 
     private IEnumerator LoadDiscSelectionPanel()
@@ -129,7 +133,6 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
         BackButton.interactable = true;
     }
-
     private IEnumerator LoadStartMenuButtonPanel()
     {
         BackButton.interactable = false;
@@ -175,6 +178,8 @@ public class StartMenuManager : Singleton<StartMenuManager>
 
     private IEnumerator LoadGameplayScene()
     {
+        SetPlayButtonInteractable(false);
+
         AudioSource playGameAudioSource = PlayButton.GetComponent<AudioSource>();
         playGameAudioSource.Play();
 
@@ -243,8 +248,9 @@ public class StartMenuManager : Singleton<StartMenuManager>
     public void SetUsername(string input)
     {
         AudioSource inputFieldAudioSource = usernameInputField.GetComponent<AudioSource>();
+        inputFieldAudioSource.volume = 0.5f;
         inputFieldAudioSource.Play();
-
+        
         SetOnlineGameButtonInteractable(input.Length > 0);
         PlayerPrefs.SetString("Username", input);
     }
@@ -371,7 +377,7 @@ public class StartMenuManager : Singleton<StartMenuManager>
             else
             {
                 AudioSource playGameAudioSource = PlayButton.GetComponent<AudioSource>();
-            playGameAudioSource.Play();
+                playGameAudioSource.Play();
             }
         }
     }

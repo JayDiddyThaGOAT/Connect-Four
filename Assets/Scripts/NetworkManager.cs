@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 using TMPro;
 
@@ -19,12 +20,16 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     private StartMenuManager startMenuManager;
 
+    private InputManager inputManager;
+
     private Connect4Board connect4Board;
 
     private TMP_Text LoadingUpdateText;
 
+#pragma warning disable 0649 
     [SerializeField]
     private GameObject LoadingPanel;
+#pragma warning restore 0649 
 
     void Start()
     {
@@ -78,6 +83,23 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         }
 
         LoadingPanel.SetActive(true);
+    }
+
+    public void ShowDisconnectedPanel()
+    {
+        Transform canvas = GameObject.Find("Canvas").transform;
+        GameObject disconnectedPanel = Instantiate<GameObject>(Resources.Load<GameObject>("Prefabs/DisconnectedPanel"), canvas);
+
+        Transform disconnectedWindow = disconnectedPanel.transform.Find("DisconnectedWindow");
+
+        inputManager = InputManager.Instance;
+        inputManager.enabled = false;
+
+        Button confirmButton = disconnectedWindow.Find("DisconnectedConfirmButton").GetComponent<Button>();
+        confirmButton.onClick.AddListener(PhotonNetwork.Disconnect);
+        confirmButton.onClick.AddListener(() => {
+            inputManager.enabled = true;
+        });
     }
 
     #region Photon Callbacks
@@ -147,7 +169,9 @@ public class NetworkManager : MonoBehaviourPunCallbacks
             startMenuManager.SetPlayButtonInteractable(false);
         }
         else
-            PhotonNetwork.Disconnect();
+        {
+            ShowDisconnectedPanel();
+        }
     }
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, ExitGames.Client.Photon.Hashtable changedProps)
@@ -239,7 +263,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            PhotonNetwork.Disconnect();
+            ShowDisconnectedPanel();
         }
     }
 
@@ -261,6 +285,10 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         }
         else
         {
+            GameObject disconnectedPanel = GameObject.FindGameObjectWithTag("Disconnected Panel");
+            if (disconnectedPanel != null)
+                Destroy(disconnectedPanel);
+
             PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
             PhotonNetwork.LoadLevel("StartMenu");
         }

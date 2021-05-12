@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+using TMPro;
+
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
@@ -16,13 +18,6 @@ public class GameManager : Singleton<GameManager>
     private InputManager inputManager;
 
     private const byte RESET_GAME = 7;
-
-    private const byte LEAVE_GAME = 8;
-
-#pragma warning disable 0649
-    [SerializeField]
-    private Button resetButton;
-#pragma warning restore 0649
 
     void Start()
     {
@@ -39,21 +34,28 @@ public class GameManager : Singleton<GameManager>
     {
         if (PhotonNetwork.IsConnected)
         {
-            RaiseEventOptions raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.All};
-            PhotonNetwork.RaiseEvent(LEAVE_GAME, null, raiseEventOptions, SendOptions.SendReliable);
+            PhotonNetwork.Disconnect();
         }
         else
             SceneManager.LoadScene("StartMenu");
     }
 
-    public void SetResetButtonActive(bool active)
+    public void SetResetButtonVisible(bool visible)
     {
-        resetButton.gameObject.SetActive(active);
-        resetButton.interactable = active;
+        Button resetButton = GameObject.FindGameObjectWithTag("Reset Button").GetComponent<Button>();
+        resetButton.interactable = visible;
     }
 
-    public void ResetGame()
+    private IEnumerator StartResettingGame()
     {
+        AudioSource resetButtonAudioSource = GameObject.FindGameObjectWithTag("Reset Button").GetComponent<AudioSource>();
+        resetButtonAudioSource.Play();
+
+        while (resetButtonAudioSource.isPlaying)
+            yield return null;
+
+        SetResetButtonVisible(false);
+
         if (!PhotonNetwork.IsConnected)
         {
             connect4Board.ResetBoard();
@@ -63,18 +65,25 @@ public class GameManager : Singleton<GameManager>
         {
             if (SceneManager.GetActiveScene().name == "Gameplay")
             {
-                resetButton.interactable = false;
+                SetResetButtonVisible(false);
 
                 PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", true}});
 
                 int opponentPlayerIndex = PhotonNetwork.LocalPlayer == PhotonNetwork.PlayerList[0] ? 1 : 0; 
                 Player opponentPlayer = PhotonNetwork.PlayerList[opponentPlayerIndex];
+
+                Transform canvas = GameObject.Find("Canvas").transform;
+                GameObject loadingPanel = Instantiate<GameObject>(Resources.Load<GameObject>("Prefabs/LoadingPanel"), canvas);
+
+                TMP_Text loadingPanelText = loadingPanel.transform.Find("LoadingUpdateText").GetComponent<TMP_Text>();
+                loadingPanelText.text = $"Waiting for {opponentPlayer.NickName}";
+
+                bool isOpponentReadyToPlay = opponentPlayer.CustomProperties.ContainsKey("Ready To Play?") && (bool)opponentPlayer.CustomProperties["Ready To Play?"];
+                while (!isOpponentReadyToPlay)
+                    yield return null;
                 
-                if (opponentPlayer.CustomProperties.ContainsKey("Ready To Play?") && (bool)opponentPlayer.CustomProperties["Ready To Play?"])
-                {
-                    RaiseEventOptions raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.All};
-                    PhotonNetwork.RaiseEvent(RESET_GAME, null, raiseEventOptions, SendOptions.SendReliable);
-                }
+                RaiseEventOptions raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.All};
+                PhotonNetwork.RaiseEvent(RESET_GAME, null, raiseEventOptions, SendOptions.SendReliable);
             }
             else
             {
@@ -84,10 +93,28 @@ public class GameManager : Singleton<GameManager>
         }
     }
 
+    public void ResetGame()
+    {
+        if (connect4Board.IsBlackDiscAI && connect4Board.IsWhiteDiscAI)
+        {
+            connect4Board.ResetBoard();
+            StartCoroutine(connect4Board.RotateBoard());
+        }
+        else
+            StartCoroutine("StartResettingGame");
+    }
+
     void OnEventReceived(EventData obj)
     {
         if (obj.Code == RESET_GAME)
         {
+            GameObject loadingPanel = GameObject.FindGameObjectWithTag("Loading Panel");
+
+            TMP_Text loadingPanelText = loadingPanel.transform.Find("LoadingUpdateText").GetComponent<TMP_Text>();
+            loadingPanelText.text = "Resetting Game";
+            
+            Destroy(loadingPanel);
+
             PhotonNetwork.LocalPlayer.SetCustomProperties(new ExitGames.Client.Photon.Hashtable{{"Ready To Play?", null}});
 
             inputManager = InputManager.Instance;
@@ -95,10 +122,6 @@ public class GameManager : Singleton<GameManager>
 
             connect4Board.ResetBoard();
             StartCoroutine(connect4Board.RotateBoard());
-        }
-        else if (obj.Code == LEAVE_GAME)
-        {
-            PhotonNetwork.Disconnect();
         }
     }
 }

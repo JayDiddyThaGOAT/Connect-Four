@@ -7,6 +7,10 @@ TagManager:
   - Black Disc
   - White Disc
   - Board
+  - Reset Button
+  - Canvas
+  - Loading Panel
+  - Disconnected Panel
   layers:
   - Default
   - TransparentFX

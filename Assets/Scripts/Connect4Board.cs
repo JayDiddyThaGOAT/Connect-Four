@@ -93,13 +93,24 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
         get{return winnerPlayer;}
     }
 
+    [HideInInspector]
+    public bool IsBlackDiscAI{
+        get{return isBlackDiscAI;}
+    }
+
+    [HideInInspector]
+    public bool IsWhiteDiscAI{
+        get{return isWhiteDiscAI;}
+    }
+
+
     public override void Awake()
     {
         base.Awake();
 
         winLineRenderer = GetComponent<LineRenderer>();
         raiseEventOptions = new RaiseEventOptions{Receivers=ReceiverGroup.Others};
-        sendOptions = SendOptions.SendUnreliable;
+        sendOptions = SendOptions.SendReliable;
 
         blackDiscObjectPool = GetComponents<ObjectPooler>()[0];
         whiteDiscObjectPool = GetComponents<ObjectPooler>()[1];
@@ -177,9 +188,6 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
         if (scoreManager != null)
             scoreManager.SetTieTextActive(false);
-
-        if (gameManager != null)
-            gameManager.SetResetButtonActive(false);
 
         winnerPlayer = 0;
         winLineRenderer.enabled = false;
@@ -686,7 +694,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
 
         if (gameManager != null && !(isBlackDiscAI && isWhiteDiscAI))
         {
-            gameManager.SetResetButtonActive(true);
+            gameManager.SetResetButtonVisible(true);
         }
 
         winnerPlayer = player;
@@ -957,7 +965,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                         yield return 0;
 
                     if (gameManager != null)
-                        gameManager.SetResetButtonActive(true);
+                        gameManager.SetResetButtonVisible(true);
 
                     if (PhotonNetwork.IsConnected && SceneManager.GetActiveScene().name == "Gameplay")
                         PhotonNetwork.RaiseEvent(TIE_GAME, null, raiseEventOptions, sendOptions);
@@ -1116,7 +1124,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 inputManager.enabled = false;
 
             if (gameManager != null)
-                gameManager.SetResetButtonActive(true);
+                gameManager.SetResetButtonVisible(true);
 
             object[] data = (object[])obj.CustomData;
 
@@ -1153,7 +1161,7 @@ public class Connect4Board : SingletonPersistent<Connect4Board>
                 scoreManager.SetTieTextActive(true);
 
             if (gameManager != null)
-                gameManager.SetResetButtonActive(true);
+                gameManager.SetResetButtonVisible(true);
         }
     }
 
